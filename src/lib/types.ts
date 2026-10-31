@@ -4,8 +4,12 @@ export interface AudioTrack {
   id: string;
   title: string;
   artist: string;
-  url: string;
+  url: string; // Direct audio stream / preview URL
   durationSeconds?: number;
+  artworkUrl?: string;
+  albumName?: string;
+  source?: 'library' | 'spotify' | 'ytmusic' | 'custom';
+  externalId?: string;
 }
 
 export interface MediaItem {
@@ -23,6 +27,9 @@ export interface MediaItem {
     artist: string;
     url: string;
     startOffsetSeconds: number;
+    artworkUrl?: string;
+    albumName?: string;
+    source?: 'library' | 'spotify' | 'ytmusic' | 'custom';
   };
   audioMix?: {
     videoVolume: number; // 0 to 1 (volume of original video audio)

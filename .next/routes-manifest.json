@@ -42,6 +42,12 @@
       "namedRegex": "^/_not\\-found(?:/)?$"
     },
     {
+      "page": "/api/music/search",
+      "regex": "^/api/music/search(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/music/search(?:/)?$"
+    },
+    {
       "page": "/api/upload",
       "regex": "^/api/upload(?:/)?$",
       "routeKeys": {},

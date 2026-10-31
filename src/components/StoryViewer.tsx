@@ -389,23 +389,39 @@ export default function StoryViewer({
           <div className="flex items-center justify-between">
             {/* Spinning Music Vinyl Pill */}
             {currentItem.audioTrack ? (
-              <div className="flex items-center gap-2.5 bg-black/60 border border-white/15 px-3 py-1.5 rounded-full backdrop-blur-md shadow-lg max-w-[80%]">
-                <div className="relative flex items-center justify-center">
-                  <div
-                    className={`w-6 h-6 rounded-full bg-neutral-800 border-2 border-neutral-700 flex items-center justify-center ${
-                      !isPaused ? 'animate-spin' : ''
-                    }`}
-                    style={{ animationDuration: '4s' }}
-                  >
-                    <div className="w-2 h-2 rounded-full bg-rose-500" />
-                  </div>
-                  <Music className="w-3 h-3 text-white absolute -top-1 -right-1" />
+              <div className="flex items-center gap-2.5 bg-black/70 border border-white/20 px-3 py-1.5 rounded-full backdrop-blur-md shadow-xl max-w-[80%]">
+                <div className="relative flex items-center justify-center flex-shrink-0">
+                  {currentItem.audioTrack.artworkUrl ? (
+                    <div
+                      className={`w-7 h-7 rounded-full overflow-hidden border-2 border-amber-400/80 shadow-md ${
+                        !isPaused ? 'animate-spin' : ''
+                      }`}
+                      style={{ animationDuration: '4s' }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={currentItem.audioTrack.artworkUrl}
+                        alt="Album Cover"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      className={`w-6 h-6 rounded-full bg-neutral-800 border-2 border-neutral-700 flex items-center justify-center ${
+                        !isPaused ? 'animate-spin' : ''
+                      }`}
+                      style={{ animationDuration: '4s' }}
+                    >
+                      <div className="w-2 h-2 rounded-full bg-rose-500" />
+                    </div>
+                  )}
+                  <Music className="w-3 h-3 text-white absolute -top-1 -right-1 drop-shadow" />
                 </div>
                 <div className="truncate text-xs">
-                  <span className="font-medium text-white truncate block">
+                  <span className="font-semibold text-white truncate block">
                     {currentItem.audioTrack.title}
                   </span>
-                  <span className="text-[10px] text-white/60 truncate block">
+                  <span className="text-[10px] text-white/70 truncate block">
                     {currentItem.audioTrack.artist}
                   </span>
                 </div>

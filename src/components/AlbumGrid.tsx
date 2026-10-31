@@ -153,8 +153,17 @@ export default function AlbumGrid({
 
                   {/* Paired Soundtrack Badge */}
                   {item.audioTrack && (
-                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-medium border border-white/10 max-w-[55%] truncate">
-                      <Music className="w-3 h-3 text-rose-400 flex-shrink-0 animate-pulse" />
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md text-white text-[10px] font-medium border border-white/15 max-w-[58%] truncate">
+                      {item.audioTrack.artworkUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={item.audioTrack.artworkUrl}
+                          alt="Cover"
+                          className="w-3.5 h-3.5 rounded-full object-cover flex-shrink-0"
+                        />
+                      ) : (
+                        <Music className="w-3 h-3 text-rose-400 flex-shrink-0 animate-pulse" />
+                      )}
                       <span className="truncate">{item.audioTrack.title}</span>
                     </span>
                   )}

@@ -48,6 +48,7 @@ export const INITIAL_MEMORIES: MediaItem[] = [
       title: 'Ocean Breeze & Guitar',
       artist: 'Lofi Chill Vault',
       url: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3',
+      artworkUrl: 'https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=300&q=80',
       startOffsetSeconds: 12,
     },
     audioMix: {
@@ -71,6 +72,7 @@ export const INITIAL_MEMORIES: MediaItem[] = [
       title: 'Acoustic Road',
       artist: 'Sundown Sessions',
       url: 'https://cdn.pixabay.com/download/audio/2021/08/04/audio_12b0c7443c.mp3',
+      artworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=300&q=80',
       startOffsetSeconds: 5,
     },
     audioMix: {
@@ -94,6 +96,7 @@ export const INITIAL_MEMORIES: MediaItem[] = [
       title: 'Midnight Rain Lofi',
       artist: 'Kyoto Soundscape',
       url: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3',
+      artworkUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=300&q=80',
       startOffsetSeconds: 0,
     },
     audioMix: {
@@ -117,6 +120,7 @@ export const INITIAL_MEMORIES: MediaItem[] = [
       title: 'Mountain Hymn',
       artist: 'Acoustic Horizon',
       url: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3',
+      artworkUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=300&q=80',
       startOffsetSeconds: 40,
     },
     audioMix: {
@@ -140,6 +144,7 @@ export const INITIAL_MEMORIES: MediaItem[] = [
       title: 'Summer Serenade',
       artist: 'Folk Reverie',
       url: 'https://cdn.pixabay.com/download/audio/2021/08/04/audio_12b0c7443c.mp3',
+      artworkUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=300&q=80',
       startOffsetSeconds: 15,
     },
     audioMix: {
@@ -163,6 +168,7 @@ export const INITIAL_MEMORIES: MediaItem[] = [
       title: 'Retro Synth Nights',
       artist: 'Analog Dreamers',
       url: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3',
+      artworkUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=300&q=80',
       startOffsetSeconds: 30,
     },
     audioMix: {

@@ -3,9 +3,10 @@
 import React, { useState, useRef } from 'react';
 import { MediaItem, MediaType, Album } from '@/lib/types';
 import { PRESET_SOUNDTRACKS } from '@/lib/sampleData';
+import MusicSearchModal from './MusicSearchModal';
 import { 
   X, UploadCloud, Film, Image as ImageIcon, Music, 
-  Play, Pause, Sliders, Check, MapPin, Sparkles
+  Play, Pause, Sliders, Check, MapPin, Sparkles, Search, Disc3
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -35,13 +36,34 @@ export default function UploadModal({
   const [takenAt, setTakenAt] = useState(new Date().toISOString().split('T')[0]);
 
   // Audio State
-  const [audioSource, setAudioSource] = useState<'preset' | 'custom' | 'none'>('preset');
-  const [selectedPresetId, setSelectedPresetId] = useState(PRESET_SOUNDTRACKS[0]?.id || '');
+  const [audioSource, setAudioSource] = useState<'catalog' | 'custom' | 'preset' | 'none'>('catalog');
+  
+  // Catalog Selected Track
+  const [catalogTrack, setCatalogTrack] = useState<{
+    title: string;
+    artist: string;
+    url: string;
+    artworkUrl?: string;
+    startOffsetSeconds: number;
+  }>({
+    title: 'Yellow',
+    artist: 'Coldplay',
+    url: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/66/f3/1a/66f31a76-a6ed-cb4c-f353-23310a7ae9a8/mzaf_10593596652344378873.plus.aac.p.m4a',
+    artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/f5/93/8c/f5938c49-964c-31d1-4b33-78b634f71fb7/190295978075.jpg/600x600bb.jpg',
+    startOffsetSeconds: 0,
+  });
+
+  const [isMusicModalOpen, setIsMusicModalOpen] = useState(false);
+
+  // Custom Audio State
   const [customAudioFile, setCustomAudioFile] = useState<File | null>(null);
   const [customAudioUrl, setCustomAudioUrl] = useState('');
   const [customAudioTitle, setCustomAudioTitle] = useState('');
   const [customAudioArtist, setCustomAudioArtist] = useState('');
   const [audioStartOffset, setAudioStartOffset] = useState(0);
+
+  // Preset State
+  const [selectedPresetId, setSelectedPresetId] = useState(PRESET_SOUNDTRACKS[0]?.id || '');
   
   // Audio Mixer State
   const [videoVol, setVideoVol] = useState(0.4);
@@ -83,11 +105,18 @@ export default function UploadModal({
   // Toggle audio test preview
   const toggleAudioTest = () => {
     let trackUrl = '';
-    if (audioSource === 'preset') {
+    let offset = 0;
+
+    if (audioSource === 'catalog') {
+      trackUrl = catalogTrack.url;
+      offset = catalogTrack.startOffsetSeconds;
+    } else if (audioSource === 'preset') {
       const p = PRESET_SOUNDTRACKS.find((s) => s.id === selectedPresetId);
       trackUrl = p ? p.url : '';
+      offset = audioStartOffset;
     } else if (audioSource === 'custom') {
       trackUrl = customAudioUrl;
+      offset = audioStartOffset;
     }
 
     if (!trackUrl || !previewAudioRef.current) return;
@@ -97,7 +126,7 @@ export default function UploadModal({
       setIsPlayingAudioTest(false);
     } else {
       previewAudioRef.current.src = trackUrl;
-      previewAudioRef.current.currentTime = audioStartOffset;
+      previewAudioRef.current.currentTime = offset;
       previewAudioRef.current.volume = musicVol;
       previewAudioRef.current.play().then(() => {
         setIsPlayingAudioTest(true);
@@ -113,7 +142,16 @@ export default function UploadModal({
 
     // Configure Audio Track
     let audioTrack = undefined;
-    if (audioSource === 'preset') {
+    if (audioSource === 'catalog' && catalogTrack.url) {
+      audioTrack = {
+        title: catalogTrack.title,
+        artist: catalogTrack.artist,
+        url: catalogTrack.url,
+        artworkUrl: catalogTrack.artworkUrl,
+        startOffsetSeconds: catalogTrack.startOffsetSeconds,
+        source: 'library' as const,
+      };
+    } else if (audioSource === 'preset') {
       const preset = PRESET_SOUNDTRACKS.find((s) => s.id === selectedPresetId);
       if (preset) {
         audioTrack = {
@@ -121,6 +159,7 @@ export default function UploadModal({
           artist: preset.artist,
           url: preset.url,
           startOffsetSeconds: audioStartOffset,
+          source: 'library' as const,
         };
       }
     } else if (audioSource === 'custom' && customAudioUrl) {
@@ -129,6 +168,7 @@ export default function UploadModal({
         artist: customAudioArtist || 'Uploaded Track',
         url: customAudioUrl,
         startOffsetSeconds: audioStartOffset,
+        source: 'custom' as const,
       };
     }
 
@@ -248,23 +288,23 @@ export default function UploadModal({
             )}
           </div>
 
-          {/* 2. Music Soundtrack Attachment */}
+          {/* 2. Instagram-Style Music Catalog Attachment */}
           <div className="border border-neutral-800 rounded-2xl p-4 bg-neutral-800/30 space-y-4">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
                 <Music className="w-4 h-4" />
-                2. Pair With Soundtrack (Instagram Style)
+                2. Music Soundtrack (Instagram Style)
               </label>
               
               <div className="flex bg-neutral-900 p-0.5 rounded-lg border border-neutral-700 text-xs">
                 <button
                   type="button"
-                  onClick={() => setAudioSource('preset')}
+                  onClick={() => setAudioSource('catalog')}
                   className={`px-3 py-1 rounded-md transition ${
-                    audioSource === 'preset' ? 'bg-amber-500 text-black font-semibold' : 'text-neutral-400'
+                    audioSource === 'catalog' ? 'bg-amber-500 text-black font-semibold' : 'text-neutral-400'
                   }`}
                 >
-                  Atmospheric Presets
+                  Music Library
                 </button>
                 <button
                   type="button"
@@ -287,27 +327,107 @@ export default function UploadModal({
               </div>
             </div>
 
-            {/* Preset Soundtracks Selector */}
-            {audioSource === 'preset' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                {PRESET_SOUNDTRACKS.map((track) => (
-                  <div
-                    key={track.id}
-                    onClick={() => setSelectedPresetId(track.id)}
-                    className={`p-3 rounded-xl border text-left cursor-pointer transition ${
-                      selectedPresetId === track.id
-                        ? 'border-amber-500 bg-amber-500/10 text-white'
-                        : 'border-neutral-700 hover:border-neutral-600 bg-neutral-800/40 text-neutral-300'
-                    }`}
-                  >
-                    <p className="font-semibold text-xs truncate">{track.title}</p>
-                    <p className="text-[10px] text-neutral-400 truncate">{track.artist}</p>
+            {/* A. Global Music Library Selector (Spotify / Apple Music catalog) */}
+            {audioSource === 'catalog' && (
+              <div className="space-y-3">
+                {catalogTrack.url ? (
+                  <div className="flex items-center justify-between p-3.5 rounded-2xl bg-neutral-800/80 border border-neutral-700 shadow-lg">
+                    <div className="flex items-center gap-3.5 min-w-0 pr-2">
+                      <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-md flex-shrink-0 bg-neutral-900 border border-white/10">
+                        {catalogTrack.artworkUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={catalogTrack.artworkUrl}
+                            alt={catalogTrack.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Disc3 className="w-6 h-6 text-amber-400 animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-xs text-white truncate">
+                            {catalogTrack.title}
+                          </h4>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-semibold border border-emerald-500/30">
+                            Attached
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-neutral-400 truncate">
+                          {catalogTrack.artist}
+                        </p>
+                        <p className="text-[10px] text-amber-400 font-mono mt-0.5">
+                          Start offset: 0:{catalogTrack.startOffsetSeconds < 10 ? `0${catalogTrack.startOffsetSeconds}` : catalogTrack.startOffsetSeconds}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={toggleAudioTest}
+                        className="p-2.5 rounded-full bg-neutral-700 hover:bg-neutral-600 text-white transition"
+                        title="Audition track"
+                      >
+                        {isPlayingAudioTest ? (
+                          <Pause className="w-3.5 h-3.5 fill-white" />
+                        ) : (
+                          <Play className="w-3.5 h-3.5 fill-white translate-x-0.5" />
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsMusicModalOpen(true)}
+                        className="px-3 py-1.5 rounded-xl bg-neutral-700 hover:bg-neutral-600 text-white text-xs font-medium flex items-center gap-1.5 transition"
+                      >
+                        <Search className="w-3 h-3" />
+                        <span>Change</span>
+                      </button>
+                    </div>
                   </div>
-                ))}
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsMusicModalOpen(true)}
+                    className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl border-2 border-dashed border-amber-500/40 hover:border-amber-500 bg-amber-500/5 hover:bg-amber-500/10 text-amber-400 text-xs font-semibold transition"
+                  >
+                    <Search className="w-4 h-4" />
+                    <span>Search Millions of Songs (Spotify & Apple Music Library)</span>
+                  </button>
+                )}
+
+                {/* Scrubber for catalog track */}
+                {catalogTrack.url && (
+                  <div className="pt-2 border-t border-neutral-800/80">
+                    <div className="flex justify-between text-[11px] text-neutral-400 mb-1">
+                      <span>Adjust Starting Point (Intro / Chorus):</span>
+                      <span className="text-white font-mono font-bold">
+                        0:{catalogTrack.startOffsetSeconds < 10 ? `0${catalogTrack.startOffsetSeconds}` : catalogTrack.startOffsetSeconds}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="25"
+                      step="1"
+                      value={catalogTrack.startOffsetSeconds}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        setCatalogTrack((prev) => ({ ...prev, startOffsetSeconds: val }));
+                        if (previewAudioRef.current) previewAudioRef.current.currentTime = val;
+                      }}
+                      className="w-full accent-amber-500 h-1.5 bg-neutral-700 rounded-lg cursor-pointer"
+                    />
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Custom Music File Upload */}
+            {/* B. Custom Music File Upload */}
             {audioSource === 'custom' && (
               <div className="space-y-3">
                 <label className="flex items-center gap-3 p-3 border border-neutral-700 rounded-xl bg-neutral-800/60 cursor-pointer hover:border-amber-500/80 transition">
@@ -318,7 +438,7 @@ export default function UploadModal({
                     <span className="font-medium text-white block">
                       {customAudioFile ? customAudioFile.name : 'Choose an MP3, AAC, or WAV file'}
                     </span>
-                    <span className="text-neutral-400 text-[10px]">Your personal music vault</span>
+                    <span className="text-neutral-400 text-[10px]">Your personal music file</span>
                   </div>
                   <input
                     type="file"
@@ -353,77 +473,39 @@ export default function UploadModal({
               </div>
             )}
 
-            {/* Music Start Offset & Test Play */}
-            {audioSource !== 'none' && (
-              <div className="pt-2 border-t border-neutral-800/80 space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-neutral-400">
-                    Track Start Offset: <strong className="text-white">{audioStartOffset}s</strong>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={toggleAudioTest}
-                    className="flex items-center gap-1.5 px-3 py-1 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white rounded-lg text-xs transition"
-                  >
-                    {isPlayingAudioTest ? (
-                      <>
-                        <Pause className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        <span>Stop Test</span>
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        <span>Preview Snippet</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                <input
-                  type="range"
-                  min="0"
-                  max="60"
-                  step="1"
-                  value={audioStartOffset}
-                  onChange={(e) => setAudioStartOffset(parseInt(e.target.value, 10))}
-                  className="w-full accent-amber-500 h-1.5 bg-neutral-700 rounded-lg cursor-pointer"
-                />
-
-                {/* Audio Mixer Balance (If Video) */}
-                {fileType === 'video' && (
-                  <div className="grid grid-cols-2 gap-4 pt-2">
-                    <div>
-                      <div className="flex justify-between text-[11px] text-neutral-400 mb-1">
-                        <span>Original Video Sound</span>
-                        <span className="text-white">{Math.round(videoVol * 100)}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={videoVol}
-                        onChange={(e) => setVideoVol(parseFloat(e.target.value))}
-                        className="w-full accent-amber-500 h-1 bg-neutral-700 rounded-lg cursor-pointer"
-                      />
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-[11px] text-neutral-400 mb-1">
-                        <span>Soundtrack Volume</span>
-                        <span className="text-white">{Math.round(musicVol * 100)}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={musicVol}
-                        onChange={(e) => setMusicVol(parseFloat(e.target.value))}
-                        className="w-full accent-rose-500 h-1 bg-neutral-700 rounded-lg cursor-pointer"
-                      />
-                    </div>
+            {/* C. Audio Mixer Balance (If Video) */}
+            {audioSource !== 'none' && fileType === 'video' && (
+              <div className="grid grid-cols-2 gap-4 pt-3 border-t border-neutral-800/80">
+                <div>
+                  <div className="flex justify-between text-[11px] text-neutral-400 mb-1">
+                    <span>Original Video Sound</span>
+                    <span className="text-white font-mono">{Math.round(videoVol * 100)}%</span>
                   </div>
-                )}
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={videoVol}
+                    onChange={(e) => setVideoVol(parseFloat(e.target.value))}
+                    className="w-full accent-amber-500 h-1 bg-neutral-700 rounded-lg cursor-pointer"
+                  />
+                </div>
+                <div>
+                  <div className="flex justify-between text-[11px] text-neutral-400 mb-1">
+                    <span>Soundtrack Volume</span>
+                    <span className="text-white font-mono">{Math.round(musicVol * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={musicVol}
+                    onChange={(e) => setMusicVol(parseFloat(e.target.value))}
+                    className="w-full accent-rose-500 h-1 bg-neutral-700 rounded-lg cursor-pointer"
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -527,6 +609,16 @@ export default function UploadModal({
           </div>
         </div>
       </div>
+
+      {/* Global Music Search Modal (Spotify & Apple Music Library) */}
+      <MusicSearchModal
+        isOpen={isMusicModalOpen}
+        onClose={() => setIsMusicModalOpen(false)}
+        onSelectTrack={(track) => {
+          setCatalogTrack(track);
+          setAudioSource('catalog');
+        }}
+      />
     </div>
   );
 }
