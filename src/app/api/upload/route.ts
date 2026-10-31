@@ -14,22 +14,27 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // If Cloudflare R2 / AWS S3 environment variables are configured, upload to S3/R2:
-    if (process.env.R2_BUCKET_NAME && process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY) {
-      // In production, instantiate S3Client with endpoint: https://<account_id>.r2.cloudflarestorage.com
-      // Upload using PutObjectCommand and return public R2/CDN URL.
-    }
-
-    // Default self-hosted storage: Save to /public/uploads/
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+    // Save to server-side uploads directory
+    const uploadDir = path.join(process.cwd(), 'uploads');
     await mkdir(uploadDir, { recursive: true });
 
-    const safeName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    const filePath = path.join(uploadDir, safeName);
-    await writeFile(filePath, buffer);
+    // Also mirror to public/uploads for direct static access
+    const publicDir = path.join(process.cwd(), 'public', 'uploads');
+    await mkdir(publicDir, { recursive: true });
 
-    const publicUrl = `/uploads/${safeName}`;
-    return NextResponse.json({ url: publicUrl, filename: safeName });
+    const safeName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    
+    await writeFile(path.join(uploadDir, safeName), buffer);
+    await writeFile(path.join(publicDir, safeName), buffer);
+
+    // Permanent API streaming URL
+    const mediaUrl = `/api/media/${safeName}`;
+
+    return NextResponse.json({ 
+      success: true,
+      url: mediaUrl, 
+      filename: safeName 
+    });
   } catch (error) {
     console.error('Upload processing error:', error);
     return NextResponse.json({ error: 'Failed to process file' }, { status: 500 });

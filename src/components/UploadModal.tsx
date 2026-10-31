@@ -69,6 +69,7 @@ export default function UploadModal({
 
   // Audio Preview Test State
   const [isPlayingAudioTest, setIsPlayingAudioTest] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Pause test audio when modal is closed
@@ -207,7 +208,7 @@ export default function UploadModal({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!mediaPreviewUrl && !mediaFile) {
       alert('Please upload a photo or video first!');
       return;
@@ -215,61 +216,107 @@ export default function UploadModal({
 
     // Stop preview test
     if (previewAudioRef.current) previewAudioRef.current.pause();
+    setIsUploading(true);
 
-    // Configure Audio Track
-    let audioTrack = undefined;
-    if (audioSource === 'catalog' && catalogTrack.url) {
-      audioTrack = {
-        title: catalogTrack.title,
-        artist: catalogTrack.artist,
-        url: catalogTrack.url,
-        artworkUrl: catalogTrack.artworkUrl,
-        startOffsetSeconds: Math.min(catalogTrack.startOffsetSeconds, 25),
-        source: 'library' as const,
-      };
-    } else if (audioSource === 'custom' && customAudioUrl) {
-      audioTrack = {
-        title: customAudioTitle || 'Custom Memory Soundtrack',
-        artist: customAudioArtist || 'Uploaded Track',
-        url: customAudioUrl,
-        startOffsetSeconds: customAudioStartOffset,
-        source: 'custom' as const,
-      };
-    }
-
-    const newItem: MediaItem = {
-      id: `mem-${Date.now()}`,
-      type: fileType,
-      url: mediaPreviewUrl,
-      thumbnailUrl: mediaPreviewUrl,
-      title: title || 'Untitled Memory',
-      caption,
-      album: albumId,
-      location,
-      takenAt: takenAt || new Date().toISOString().split('T')[0] || '2024-10-31',
-      durationSeconds: fileType === 'video' ? 15 : 7,
-      isFavorite: false,
-      audioTrack,
-      audioMix: {
-        videoVolume: fileType === 'video' ? videoVol : 0,
-        musicVolume: musicVol,
-      },
-    };
-
-    onSave(newItem);
-
-    // Trigger celebration confetti
     try {
-      confetti({
-        particleCount: 80,
-        spread: 60,
-        origin: { y: 0.7 },
-      });
-    } catch {
-      // safe fallback
-    }
+      let finalMediaUrl = mediaPreviewUrl;
 
-    onClose();
+      // 1. Upload media binary to server so it is saved permanently on disk
+      if (mediaFile) {
+        const formData = new FormData();
+        formData.append('file', mediaFile);
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.url) finalMediaUrl = data.url;
+        } else {
+          console.warn('Media upload to server returned non-OK, using preview');
+        }
+      }
+
+      // 2. Upload custom audio if user provided a personal file
+      let finalAudioUrl = '';
+      if (audioSource === 'catalog') {
+        finalAudioUrl = catalogTrack.url;
+      } else if (audioSource === 'custom') {
+        if (customAudioFile) {
+          const audioFormData = new FormData();
+          audioFormData.append('file', customAudioFile);
+          const audioRes = await fetch('/api/upload', {
+            method: 'POST',
+            body: audioFormData,
+          });
+          if (audioRes.ok) {
+            const data = await audioRes.json();
+            if (data.url) finalAudioUrl = data.url;
+          }
+        }
+        if (!finalAudioUrl) finalAudioUrl = customAudioUrl;
+      }
+
+      // Configure Audio Track
+      let audioTrack = undefined;
+      if (audioSource === 'catalog' && catalogTrack.url) {
+        audioTrack = {
+          title: catalogTrack.title,
+          artist: catalogTrack.artist,
+          url: catalogTrack.url,
+          artworkUrl: catalogTrack.artworkUrl,
+          startOffsetSeconds: Math.min(catalogTrack.startOffsetSeconds, 25),
+          source: 'library' as const,
+        };
+      } else if (audioSource === 'custom' && finalAudioUrl) {
+        audioTrack = {
+          title: customAudioTitle || 'Custom Memory Soundtrack',
+          artist: customAudioArtist || 'Uploaded Track',
+          url: finalAudioUrl,
+          startOffsetSeconds: customAudioStartOffset,
+          source: 'custom' as const,
+        };
+      }
+
+      const newItem: MediaItem = {
+        id: `mem-${Date.now()}`,
+        type: fileType,
+        url: finalMediaUrl,
+        thumbnailUrl: finalMediaUrl,
+        title: title || 'Untitled Memory',
+        caption,
+        album: albumId,
+        location,
+        takenAt: takenAt || new Date().toISOString().split('T')[0] || '2024-10-31',
+        durationSeconds: fileType === 'video' ? 15 : 7,
+        isFavorite: false,
+        audioTrack,
+        audioMix: {
+          videoVolume: fileType === 'video' ? videoVol : 0,
+          musicVolume: musicVol,
+        },
+      };
+
+      onSave(newItem);
+
+      // Trigger celebration confetti
+      try {
+        confetti({
+          particleCount: 80,
+          spread: 60,
+          origin: { y: 0.7 },
+        });
+      } catch {
+        // safe fallback
+      }
+
+      onClose();
+    } catch (err) {
+      console.error('Save failed:', err);
+      alert('Failed to save memory. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -720,10 +767,20 @@ export default function UploadModal({
             </button>
             <button
               onClick={handleSave}
-              className="px-5 py-2 text-xs font-semibold bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-white rounded-xl shadow-lg shadow-rose-500/20 transition flex items-center gap-1.5"
+              disabled={isUploading}
+              className="px-5 py-2 text-xs font-semibold bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 disabled:opacity-50 text-white rounded-xl shadow-lg shadow-rose-500/20 transition flex items-center gap-1.5"
             >
-              <Check className="w-4 h-4" />
-              Save Memory
+              {isUploading ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Saving to Vault...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  <span>Save Memory</span>
+                </>
+              )}
             </button>
           </div>
         </div>

@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { MediaItem, Album } from '@/lib/types';
 import { 
   Play, Film, Music, Heart, MapPin, Calendar, 
-  Trash2, Sparkles
+  Trash2, Sparkles, Image as ImageIcon
 } from 'lucide-react';
 
 interface AlbumGridProps {
@@ -26,6 +26,8 @@ export default function AlbumGrid({
   onToggleFavorite,
   onDeleteItem,
 }: AlbumGridProps) {
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+
   // Filter items by album
   const filteredItems = selectedAlbum === 'all'
     ? items
@@ -119,12 +121,21 @@ export default function AlbumGrid({
                 onClick={() => onOpenStory(globalIndex >= 0 ? globalIndex : index)}
               >
                 {/* Media Thumbnail */}
-                {item.type === 'video' ? (
+                {failedImages[item.id] ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-tr from-neutral-900 to-neutral-800 p-6 text-center select-none">
+                    <div className="w-12 h-12 rounded-2xl bg-neutral-800/90 border border-neutral-700 flex items-center justify-center mb-3 shadow-lg">
+                      <ImageIcon className="w-6 h-6 text-neutral-400" />
+                    </div>
+                    <span className="text-xs font-bold text-white/90 line-clamp-1">{item.title}</span>
+                    <span className="text-[10px] text-neutral-400 mt-1">Tap to play story</span>
+                  </div>
+                ) : item.type === 'video' ? (
                   <video
                     src={item.url}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     muted
                     loop
+                    onError={() => setFailedImages((prev) => ({ ...prev, [item.id]: true }))}
                     onMouseEnter={(e) => (e.target as HTMLVideoElement).play().catch(() => {})}
                     onMouseLeave={(e) => (e.target as HTMLVideoElement).pause()}
                   />
@@ -133,6 +144,7 @@ export default function AlbumGrid({
                   <img
                     src={item.thumbnailUrl || item.url}
                     alt={item.title}
+                    onError={() => setFailedImages((prev) => ({ ...prev, [item.id]: true }))}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 )}

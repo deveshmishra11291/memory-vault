@@ -29,6 +29,7 @@ export default function StoryViewer({
   const [showMixer, setShowMixer] = useState(false);
   const [videoVol, setVideoVol] = useState(1.0);
   const [musicVol, setMusicVol] = useState(0.85);
+  const [mediaErrors, setMediaErrors] = useState<Record<string, boolean>>({});
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -355,12 +356,21 @@ export default function StoryViewer({
 
         {/* Media Canvas (Image or Video) */}
         <div className="relative flex-1 w-full h-full flex items-center justify-center bg-black overflow-hidden">
-          {currentItem.type === 'video' ? (
+          {mediaErrors[currentItem.id] ? (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-tr from-neutral-900 to-neutral-800 p-8 text-center select-none">
+              <div className="w-16 h-16 rounded-3xl bg-neutral-800 border border-neutral-700 flex items-center justify-center mb-4 shadow-xl">
+                <Music className="w-8 h-8 text-amber-400 animate-bounce" />
+              </div>
+              <h4 className="text-base font-bold text-white mb-1">{currentItem.title}</h4>
+              <p className="text-xs text-neutral-400">Audio playback active</p>
+            </div>
+          ) : currentItem.type === 'video' ? (
             <video
               ref={videoRef}
               src={currentItem.url}
               playsInline
               loop
+              onError={() => setMediaErrors((prev) => ({ ...prev, [currentItem.id]: true }))}
               className="w-full h-full object-cover md:object-contain"
             />
           ) : (
@@ -368,6 +378,7 @@ export default function StoryViewer({
             <img
               src={currentItem.url}
               alt={currentItem.title}
+              onError={() => setMediaErrors((prev) => ({ ...prev, [currentItem.id]: true }))}
               className="w-full h-full object-cover md:object-contain transition-transform duration-700 ease-out hover:scale-105"
             />
           )}
