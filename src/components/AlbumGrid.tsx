@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import { MediaItem, Album } from '@/lib/types';
 import { 
   Play, Film, Music, Heart, MapPin, Calendar, 
-  Trash2, Sparkles, Image as ImageIcon
+  Trash2, Sparkles, Image as ImageIcon, Folder, ArrowLeft, ArrowRight,
+  HardDrive, Plus, Search, Download, FolderPlus
 } from 'lucide-react';
 
 interface AlbumGridProps {
@@ -15,6 +16,10 @@ interface AlbumGridProps {
   onOpenStory: (index: number) => void;
   onToggleFavorite: (id: string) => void;
   onDeleteItem: (id: string) => void;
+  onOpenUpload: () => void;
+  onOpenNewAlbum: () => void;
+  onOpenMusicSearch: () => void;
+  onExportVault: () => void;
 }
 
 export default function AlbumGrid({
@@ -25,6 +30,10 @@ export default function AlbumGrid({
   onOpenStory,
   onToggleFavorite,
   onDeleteItem,
+  onOpenUpload,
+  onOpenNewAlbum,
+  onOpenMusicSearch,
+  onExportVault,
 }: AlbumGridProps) {
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
@@ -33,210 +42,241 @@ export default function AlbumGrid({
     ? items
     : items.filter((item) => item.album === selectedAlbum);
 
+  const activeAlbumObj = albums.find((a) => a.id === selectedAlbum) || albums[0];
+
   return (
-    <div className="space-y-8">
+    <div className="retro-box-outset shadow-2xl overflow-hidden font-mono text-xs w-full mb-12">
       
-      {/* 1. Instagram-Style Story Circles (Top Highlights) */}
-      <div className="flex items-center gap-4 overflow-x-auto pb-4 pt-1 no-scrollbar">
+      {/* 1. Retro Title Bar */}
+      <div className="retro-titlebar select-none">
+        <div className="flex items-center gap-2">
+          <Folder className="w-3.5 h-3.5 text-amber-300" />
+          <span>My Memories — [C:\Vault\{activeAlbumObj?.name.replace(/[^a-zA-Z0-9]/g, '_') || 'All'}]</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button className="retro-win-ctrl">_</button>
+          <button className="retro-win-ctrl">□</button>
+          <button className="retro-win-ctrl">✕</button>
+        </div>
+      </div>
+
+      {/* 2. Menu Bar */}
+      <div className="px-2 py-1 bg-[#dfdbed] border-b border-[#a09bb8] flex gap-3 text-[11px] text-[#2d2642] select-none">
+        <span className="hover:bg-[#5a4897] hover:text-white px-1 cursor-pointer">File</span>
+        <span className="hover:bg-[#5a4897] hover:text-white px-1 cursor-pointer">Edit</span>
+        <span className="hover:bg-[#5a4897] hover:text-white px-1 cursor-pointer">View</span>
+        <span className="hover:bg-[#5a4897] hover:text-white px-1 cursor-pointer">Favorites</span>
+        <span className="hover:bg-[#5a4897] hover:text-white px-1 cursor-pointer">Help</span>
+      </div>
+
+      {/* 3. Retro Toolbar (Desktop 1999 Style) */}
+      <div className="px-2 py-1.5 bg-[#dfdbed] border-b border-[#a09bb8] flex flex-wrap items-center gap-2 select-none">
+        <button
+          onClick={onOpenUpload}
+          className="retro-btn"
+          title="Add New Memory"
+        >
+          <Plus className="w-3.5 h-3.5 text-emerald-700" />
+          <span>Add Memory</span>
+        </button>
+
+        <button
+          onClick={onOpenNewAlbum}
+          className="retro-btn"
+          title="Create New Album"
+        >
+          <FolderPlus className="w-3.5 h-3.5 text-amber-700" />
+          <span>New Album</span>
+        </button>
+
+        <button
+          onClick={onOpenMusicSearch}
+          className="retro-btn"
+          title="Search Global Spotify/Apple Catalog"
+        >
+          <Music className="w-3.5 h-3.5 text-rose-600" />
+          <span>Music Catalog</span>
+        </button>
+
+        {filteredItems.length > 0 && (
+          <button
+            onClick={() => onOpenStory(0)}
+            className="retro-btn bg-[#c5bee6] font-bold"
+            title="Play All Stories with Soundtrack"
+          >
+            <Play className="w-3.5 h-3.5 fill-black" />
+            <span>Play Stories (90s)</span>
+          </button>
+        )}
+
+        <button
+          onClick={onExportVault}
+          className="retro-btn"
+          title="Backup Vault"
+        >
+          <Download className="w-3.5 h-3.5 text-blue-700" />
+          <span>Backup</span>
+        </button>
+      </div>
+
+      {/* 4. Address Bar */}
+      <div className="px-2 py-1 bg-[#dfdbed] border-b border-[#a09bb8] flex items-center gap-2 text-[11px] select-none">
+        <span className="text-neutral-600 font-bold">Address:</span>
+        <div className="flex-1 retro-box-inset px-2 py-0.5 bg-white text-black font-mono text-[11px] truncate flex items-center justify-between">
+          <span>C:\MemoryVault\Albums\{activeAlbumObj?.name || 'All_Memories'}</span>
+          <span className="text-neutral-400 text-[10px]">▼</span>
+        </div>
+      </div>
+
+      {/* 5. Highlight Folders (Instagram Story Circles — 1999 Edition) */}
+      <div className="p-3 bg-[#e8e5f2] border-b border-[#a09bb8] flex items-center gap-3 overflow-x-auto select-none">
         {albums.map((album) => {
           const isSelected = selectedAlbum === album.id;
           return (
             <div
               key={album.id}
               onClick={() => onSelectAlbum(album.id)}
-              className="flex flex-col items-center gap-1.5 cursor-pointer group flex-shrink-0"
+              className={`flex items-center gap-2 px-3 py-1.5 retro-box-outset cursor-pointer transition flex-shrink-0 ${
+                isSelected
+                  ? 'border-t-[#332d47] border-l-[#332d47] border-b-white border-r-white bg-[#cec8e3]'
+                  : 'hover:bg-[#f1effa]'
+              }`}
             >
-              <div
-                className={`w-18 h-18 rounded-full p-0.5 transition transform group-hover:scale-105 ${
-                  isSelected
-                    ? 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 shadow-lg shadow-rose-500/20'
-                    : 'bg-neutral-800 hover:bg-neutral-700'
-                }`}
-              >
-                <div className="w-full h-full rounded-full overflow-hidden border-2 border-neutral-950 bg-neutral-900">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={album.coverUrl}
-                    alt={album.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+              <div className="w-6 h-6 rounded-md overflow-hidden border border-[#332d47] flex-shrink-0 bg-black">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={album.coverUrl}
+                  alt={album.name}
+                  className="w-full h-full object-cover"
+                />
               </div>
-              <span className={`text-xs font-medium max-w-[80px] truncate text-center ${
-                isSelected ? 'text-white font-semibold' : 'text-neutral-400 group-hover:text-neutral-200'
-              }`}>
-                {album.name}
-              </span>
+              <div className="truncate text-[11px]">
+                <span className={`block truncate ${isSelected ? 'font-bold text-[#1a162b]' : 'text-neutral-700'}`}>
+                  {album.name}
+                </span>
+              </div>
             </div>
           );
         })}
       </div>
 
-      {/* 2. Grid Items Counter & Album Title */}
-      <div className="flex items-center justify-between border-b border-neutral-800/80 pb-3">
-        <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <span>
-              {albums.find((a) => a.id === selectedAlbum)?.name || 'Memories'}
-            </span>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-neutral-800 text-neutral-300 font-normal">
-              {filteredItems.length} {filteredItems.length === 1 ? 'memory' : 'memories'}
-            </span>
-          </h2>
-          <p className="text-xs text-neutral-400 mt-0.5">
-            {albums.find((a) => a.id === selectedAlbum)?.description || 'Lifetime collection'}
-          </p>
-        </div>
+      {/* 6. Media Cards Grid (Inside Retro Inset Viewport) */}
+      <div className="p-4 bg-[#f4f2fa] retro-box-inset m-1 min-h-[480px]">
+        {filteredItems.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center text-neutral-500 font-mono">
+            <Sparkles className="w-8 h-8 text-neutral-400 mb-2" />
+            <p className="font-bold text-xs text-neutral-700">This album is empty</p>
+            <p className="text-[11px] text-neutral-500 mt-1">
+              Click &quot;Add Memory&quot; on the toolbar to upload photos and videos.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+            {filteredItems.map((item, index) => {
+              const globalIndex = items.findIndex((m) => m.id === item.id);
 
-        {filteredItems.length > 0 && (
-          <button
-            onClick={() => onOpenStory(0)}
-            className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-white font-semibold text-xs shadow-md shadow-rose-500/20 transition"
-          >
-            <Play className="w-3.5 h-3.5 fill-white" />
-            Play All Stories
-          </button>
-        )}
-      </div>
-
-      {/* 3. Media Grid */}
-      {filteredItems.length === 0 ? (
-        <div className="text-center py-20 border border-dashed border-neutral-800 rounded-3xl bg-neutral-900/30">
-          <Sparkles className="w-10 h-10 text-neutral-600 mx-auto mb-3" />
-          <h3 className="text-base font-semibold text-white mb-1">No memories in this album yet</h3>
-          <p className="text-xs text-neutral-400 max-w-sm mx-auto">
-            Upload your favorite photos or videos and pair them with your chosen soundtrack!
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-5">
-          {filteredItems.map((item, index) => {
-            // Find global index in master items array for story opening
-            const globalIndex = items.findIndex((m) => m.id === item.id);
-
-            return (
-              <div
-                key={item.id}
-                className="group relative rounded-2xl overflow-hidden bg-neutral-900 border border-neutral-800/80 hover:border-neutral-700 transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/5 aspect-[4/5] cursor-pointer"
-                onClick={() => onOpenStory(globalIndex >= 0 ? globalIndex : index)}
-              >
-                {/* Media Thumbnail */}
-                {failedImages[item.id] ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-tr from-neutral-900 to-neutral-800 p-6 text-center select-none">
-                    <div className="w-12 h-12 rounded-2xl bg-neutral-800/90 border border-neutral-700 flex items-center justify-center mb-3 shadow-lg">
-                      <ImageIcon className="w-6 h-6 text-neutral-400" />
-                    </div>
-                    <span className="text-xs font-bold text-white/90 line-clamp-1">{item.title}</span>
-                    <span className="text-[10px] text-neutral-400 mt-1">Tap to play story</span>
-                  </div>
-                ) : item.type === 'video' ? (
-                  <video
-                    src={item.url}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    muted
-                    loop
-                    onError={() => setFailedImages((prev) => ({ ...prev, [item.id]: true }))}
-                    onMouseEnter={(e) => (e.target as HTMLVideoElement).play().catch(() => {})}
-                    onMouseLeave={(e) => (e.target as HTMLVideoElement).pause()}
-                  />
-                ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={item.thumbnailUrl || item.url}
-                    alt={item.title}
-                    onError={() => setFailedImages((prev) => ({ ...prev, [item.id]: true }))}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                )}
-
-                {/* Top Badges (Type & Music) */}
-                <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10 pointer-events-none">
-                  {/* Media Type Badge */}
-                  <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[11px] font-medium border border-white/10">
-                    {item.type === 'video' ? (
-                      <>
-                        <Film className="w-3 h-3 text-amber-400" />
-                        <span>Video</span>
-                      </>
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => onOpenStory(globalIndex >= 0 ? globalIndex : index)}
+                  className="retro-box-outset p-2 bg-[#dfdbed] cursor-pointer hover:bg-[#eae7f7] transition group flex flex-col justify-between"
+                >
+                  {/* Media Viewport */}
+                  <div className="relative aspect-[4/3] retro-box-inset bg-black overflow-hidden mb-2">
+                    {failedImages[item.id] ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-[#2d2642] p-4 text-center text-white">
+                        <ImageIcon className="w-8 h-8 text-neutral-400 mb-1" />
+                        <span className="text-[11px] font-bold line-clamp-1">{item.title}</span>
+                        <span className="text-[9px] text-neutral-400 mt-0.5">Click to play sound</span>
+                      </div>
+                    ) : item.type === 'video' ? (
+                      <video
+                        src={item.url}
+                        className="w-full h-full object-cover"
+                        muted
+                        loop
+                        onError={() => setFailedImages((prev) => ({ ...prev, [item.id]: true }))}
+                        onMouseEnter={(e) => (e.target as HTMLVideoElement).play().catch(() => {})}
+                        onMouseLeave={(e) => (e.target as HTMLVideoElement).pause()}
+                      />
                     ) : (
-                      <span>Photo</span>
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={item.thumbnailUrl || item.url}
+                        alt={item.title}
+                        onError={() => setFailedImages((prev) => ({ ...prev, [item.id]: true }))}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
                     )}
-                  </span>
 
-                  {/* Paired Soundtrack Badge */}
-                  {item.audioTrack && (
-                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md text-white text-[10px] font-medium border border-white/15 max-w-[58%] truncate">
-                      {item.audioTrack.artworkUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={item.audioTrack.artworkUrl}
-                          alt="Cover"
-                          className="w-3.5 h-3.5 rounded-full object-cover flex-shrink-0"
-                        />
-                      ) : (
-                        <Music className="w-3 h-3 text-rose-400 flex-shrink-0 animate-pulse" />
+                    {/* Top Badges */}
+                    <div className="absolute top-1.5 left-1.5 right-1.5 flex items-center justify-between pointer-events-none">
+                      <span className="px-1.5 py-0.5 rounded-sm bg-black/75 text-white font-mono text-[9px] border border-white/20">
+                        {item.type === 'video' ? '🎥 VIDEO' : '📸 PHOTO'}
+                      </span>
+
+                      {item.audioTrack && (
+                        <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-black/75 text-white font-mono text-[9px] border border-white/20 max-w-[60%] truncate">
+                          <Music className="w-2.5 h-2.5 text-rose-400 flex-shrink-0" />
+                          <span className="truncate">{item.audioTrack.title}</span>
+                        </span>
                       )}
-                      <span className="truncate">{item.audioTrack.title}</span>
-                    </span>
-                  )}
-                </div>
+                    </div>
 
-                {/* Hover Play Button Overlay */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center pointer-events-none">
-                  <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-xl transform scale-90 group-hover:scale-100 transition duration-200">
-                    <Play className="w-6 h-6 fill-white translate-x-0.5" />
+                    {/* Hover Play Icon Overlay */}
+                    <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-white/80 border border-black flex items-center justify-center text-black shadow-lg">
+                        <Play className="w-4 h-4 fill-black translate-x-0.5" />
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                {/* Bottom Metadata & Controls */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/80 to-transparent z-10">
-                  <div className="flex items-end justify-between">
-                    <div className="space-y-0.5 pr-2">
-                      <h4 className="font-semibold text-sm text-white drop-shadow line-clamp-1">
+                  {/* Card Metadata Details */}
+                  <div className="space-y-1">
+                    <div className="flex items-start justify-between gap-1">
+                      <h4 className="font-bold text-xs text-[#1a162b] truncate leading-tight">
                         {item.title}
                       </h4>
-                      <div className="flex items-center gap-2 text-[11px] text-neutral-300">
-                        <span>{item.takenAt}</span>
-                        {item.location && (
-                          <>
-                            <span>•</span>
-                            <span className="flex items-center gap-0.5 truncate max-w-[120px]">
-                              <MapPin className="w-3 h-3 text-rose-400" />
-                              {item.location}
-                            </span>
-                          </>
-                        )}
+                      
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => onToggleFavorite(item.id)}
+                          className="p-1 hover:bg-[#cec8e3] rounded"
+                          title="Favorite"
+                        >
+                          <Heart
+                            className={`w-3.5 h-3.5 ${
+                              item.isFavorite ? 'fill-rose-600 text-rose-600' : 'text-neutral-500'
+                            }`}
+                          />
+                        </button>
+                        <button
+                          onClick={() => onDeleteItem(item.id)}
+                          className="p-1 hover:bg-red-200 rounded text-neutral-500 hover:text-red-700"
+                          title="Delete from Vault"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
 
-                    {/* Actions: Favorite & Delete */}
-                    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => onToggleFavorite(item.id)}
-                        className="p-2 rounded-full bg-black/50 hover:bg-black/80 backdrop-blur-md text-white transition"
-                        title="Favorite"
-                      >
-                        <Heart
-                          className={`w-4 h-4 ${
-                            item.isFavorite ? 'fill-rose-500 text-rose-500' : 'text-white/80 hover:text-rose-400'
-                          }`}
-                        />
-                      </button>
-                      <button
-                        onClick={() => onDeleteItem(item.id)}
-                        className="p-2 rounded-full bg-black/50 hover:bg-red-500/30 backdrop-blur-md text-white/70 hover:text-red-400 transition"
-                        title="Delete from Vault"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <div className="flex items-center justify-between text-[10px] text-neutral-600 font-mono">
+                      <span>{item.takenAt}</span>
+                      {item.location && <span className="truncate max-w-[100px]">📍 {item.location}</span>}
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* 7. Bottom Status Bar */}
+      <div className="px-3 py-1 bg-[#dfdbed] text-[11px] text-neutral-700 flex justify-between select-none border-t border-[#ffffff]">
+        <span>{filteredItems.length} object(s) in album</span>
+        <span>Disk: 100% Private Encrypted Vault</span>
+      </div>
     </div>
   );
 }

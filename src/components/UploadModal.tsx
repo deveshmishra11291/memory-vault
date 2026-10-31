@@ -2,11 +2,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { MediaItem, MediaType, Album, formatTime } from '@/lib/types';
-import { PRESET_SOUNDTRACKS } from '@/lib/sampleData';
 import MusicSearchModal from './MusicSearchModal';
 import { 
   X, UploadCloud, Film, Image as ImageIcon, Music, 
-  Play, Pause, Sliders, Check, MapPin, Sparkles, Search, Disc3
+  Play, Pause, Check, MapPin, Sparkles, Search, Disc3, HardDrive
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -109,7 +108,6 @@ export default function UploadModal({
     setCustomAudioArtist('My Music Vault');
     setCustomAudioStartOffset(0);
 
-    // Detect actual duration of uploaded MP3
     const tempAudio = new Audio(url);
     tempAudio.onloadedmetadata = () => {
       if (!isNaN(tempAudio.duration) && tempAudio.duration > 0) {
@@ -158,7 +156,6 @@ export default function UploadModal({
     }
   };
 
-  // Toggle audio test preview button
   const toggleAudioTest = () => {
     const audio = previewAudioRef.current;
     if (!audio) return;
@@ -176,7 +173,6 @@ export default function UploadModal({
     }
   };
 
-  // Handler for scrubbing catalog start offset
   const handleCatalogOffsetChange = (newOffset: number) => {
     const clamped = Math.max(0, Math.min(newOffset, 25));
     setCatalogTrack((prev) => ({ ...prev, startOffsetSeconds: clamped }));
@@ -186,42 +182,24 @@ export default function UploadModal({
       if (isPlayingAudioTest) {
         audio.currentTime = clamped;
       } else {
-        // Auto-play snippet from that position so user hears it!
         playTrackAtOffset(catalogTrack.url, clamped);
-      }
-    }
-  };
-
-  // Handler for scrubbing custom audio start offset
-  const handleCustomOffsetChange = (newOffset: number) => {
-    const maxOffset = Math.max(5, customAudioDuration - 5);
-    const clamped = Math.max(0, Math.min(newOffset, maxOffset));
-    setCustomAudioStartOffset(clamped);
-
-    const audio = previewAudioRef.current;
-    if (audio) {
-      if (isPlayingAudioTest) {
-        audio.currentTime = clamped;
-      } else {
-        playTrackAtOffset(customAudioUrl, clamped);
       }
     }
   };
 
   const handleSave = async () => {
     if (!mediaPreviewUrl && !mediaFile) {
-      alert('Please upload a photo or video first!');
+      alert('Please select a photo or video file first!');
       return;
     }
 
-    // Stop preview test
     if (previewAudioRef.current) previewAudioRef.current.pause();
     setIsUploading(true);
 
     try {
       let finalMediaUrl = mediaPreviewUrl;
 
-      // 1. Upload media binary to server so it is saved permanently on disk
+      // 1. Upload media binary to server
       if (mediaFile) {
         const formData = new FormData();
         formData.append('file', mediaFile);
@@ -232,12 +210,10 @@ export default function UploadModal({
         if (res.ok) {
           const data = await res.json();
           if (data.url) finalMediaUrl = data.url;
-        } else {
-          console.warn('Media upload to server returned non-OK, using preview');
         }
       }
 
-      // 2. Upload custom audio if user provided a personal file
+      // 2. Upload custom audio if applicable
       let finalAudioUrl = '';
       if (audioSource === 'catalog') {
         finalAudioUrl = catalogTrack.url;
@@ -299,16 +275,13 @@ export default function UploadModal({
 
       onSave(newItem);
 
-      // Trigger celebration confetti
       try {
         confetti({
           particleCount: 80,
           spread: 60,
           origin: { y: 0.7 },
         });
-      } catch {
-        // safe fallback
-      }
+      } catch {}
 
       onClose();
     } catch (err) {
@@ -320,8 +293,7 @@ export default function UploadModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
-      {/* Hidden audio element for preview tests */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-[2px] font-mono text-xs select-none">
       <audio
         ref={previewAudioRef}
         onEnded={() => setIsPlayingAudioTest(false)}
@@ -330,46 +302,51 @@ export default function UploadModal({
         onError={() => setIsPlayingAudioTest(false)}
       />
 
-      <div className="relative w-full max-w-2xl bg-neutral-900 border border-neutral-800 rounded-3xl shadow-2xl overflow-hidden my-8">
+      <div className="relative w-full max-w-xl retro-box-outset shadow-2xl flex flex-col overflow-hidden max-h-[92vh]">
         
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-900/60">
+        {/* Title Bar */}
+        <div className="retro-titlebar select-none">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-amber-400" />
-            <h3 className="text-lg font-bold text-white">Add New Memory</h3>
+            <HardDrive className="w-3.5 h-3.5 text-white" />
+            <span>Add Memory Installation Wizard 1999</span>
           </div>
           <button
             onClick={() => {
               if (previewAudioRef.current) previewAudioRef.current.pause();
               onClose();
             }}
-            className="p-2 rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-white transition"
+            className="retro-win-ctrl font-bold"
           >
-            <X className="w-5 h-5" />
+            ✕
           </button>
         </div>
 
-        {/* Modal Body */}
-        <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
-          
-          {/* 1. Media Upload Zone */}
+        {/* Wizard Header Banner */}
+        <div className="px-4 py-2.5 bg-gradient-to-r from-[#dfdbed] to-[#edeaf7] border-b border-[#a09bb8] flex items-center justify-between">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">
-              1. Choose Photo or Video
-            </label>
-            
+            <h3 className="font-bold text-xs text-[#1a162b]">Memory Setup Wizard</h3>
+            <p className="text-[10px] text-neutral-600">Select media and attach background music</p>
+          </div>
+          <div className="w-7 h-7 rounded-sm bg-[#5a4897] text-white flex items-center justify-center font-bold text-xs shadow-inner">
+            99
+          </div>
+        </div>
+
+        {/* Modal Form Content */}
+        <div className="p-4 bg-[#f4f2fa] retro-box-inset m-1 overflow-y-auto space-y-4 max-h-[70vh]">
+          
+          {/* 1. Media File Upload */}
+          <div className="retro-box-outset p-3 bg-[#dfdbed] space-y-2">
+            <span className="font-bold text-[#1a162b] block">
+              1. Photo or Video Source
+            </span>
+
             {!mediaPreviewUrl ? (
-              <label className="flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-neutral-700 hover:border-amber-500/80 rounded-2xl cursor-pointer bg-neutral-800/40 hover:bg-neutral-800/70 transition group">
-                <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4">
-                  <div className="p-3 bg-neutral-800 rounded-full mb-2 group-hover:scale-110 transition">
-                    <UploadCloud className="w-6 h-6 text-amber-400" />
-                  </div>
-                  <p className="text-sm font-medium text-white mb-1">
-                    Click to upload or drag & drop
-                  </p>
-                  <p className="text-xs text-neutral-400">
-                    Supports Photos (JPEG, PNG, HEIC) & Videos (MP4, MOV, WebM)
-                  </p>
+              <label className="flex items-center justify-center p-6 border-2 border-dashed border-[#807a99] bg-white cursor-pointer hover:bg-neutral-50 transition text-center">
+                <div>
+                  <UploadCloud className="w-6 h-6 text-[#5a4897] mx-auto mb-1" />
+                  <p className="font-bold text-xs text-neutral-800">Click to Browse File...</p>
+                  <p className="text-[10px] text-neutral-500">Supports JPG, PNG, HEIC & MP4, MOV</p>
                 </div>
                 <input
                   type="file"
@@ -379,19 +356,19 @@ export default function UploadModal({
                 />
               </label>
             ) : (
-              <div className="relative rounded-2xl overflow-hidden border border-neutral-700 max-h-64 bg-black flex items-center justify-center group">
+              <div className="relative retro-box-inset bg-black p-1 max-h-48 flex items-center justify-center">
                 {fileType === 'video' ? (
                   <video
                     src={mediaPreviewUrl}
                     controls
-                    className="max-h-64 w-auto object-contain"
+                    className="max-h-44 w-auto object-contain"
                   />
                 ) : (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={mediaPreviewUrl}
                     alt="Preview"
-                    className="max-h-64 w-auto object-contain"
+                    className="max-h-44 w-auto object-contain"
                   />
                 )}
                 <button
@@ -399,40 +376,36 @@ export default function UploadModal({
                     setMediaPreviewUrl('');
                     setMediaFile(null);
                   }}
-                  className="absolute top-3 right-3 p-1.5 bg-black/70 hover:bg-red-600 rounded-full text-white backdrop-blur-md transition"
+                  className="absolute top-2 right-2 px-1.5 py-0.5 retro-btn bg-red-100 text-red-700 font-bold text-[10px]"
                 >
-                  <X className="w-4 h-4" />
+                  Remove
                 </button>
               </div>
             )}
           </div>
 
-          {/* 2. Instagram-Style Music Catalog Attachment */}
-          <div className="border border-neutral-800 rounded-2xl p-4 bg-neutral-800/30 space-y-4">
+          {/* 2. Soundtrack Attachment */}
+          <div className="retro-box-outset p-3 bg-[#dfdbed] space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                <Music className="w-4 h-4" />
-                2. Music Soundtrack (Instagram Style)
-              </label>
-              
-              <div className="flex bg-neutral-900 p-0.5 rounded-lg border border-neutral-700 text-xs">
+              <span className="font-bold text-[#1a162b] flex items-center gap-1">
+                <Music className="w-3.5 h-3.5 text-rose-600" />
+                2. Sound Track Attachment
+              </span>
+
+              <div className="flex gap-1 text-[10px]">
                 <button
                   type="button"
                   onClick={() => setAudioSource('catalog')}
-                  className={`px-3 py-1 rounded-md transition ${
-                    audioSource === 'catalog' ? 'bg-amber-500 text-black font-semibold' : 'text-neutral-400'
-                  }`}
+                  className={`px-2 py-0.5 retro-btn ${audioSource === 'catalog' ? 'bg-[#cec8e3] font-bold' : ''}`}
                 >
-                  Music Library
+                  Catalog
                 </button>
                 <button
                   type="button"
                   onClick={() => setAudioSource('custom')}
-                  className={`px-3 py-1 rounded-md transition ${
-                    audioSource === 'custom' ? 'bg-amber-500 text-black font-semibold' : 'text-neutral-400'
-                  }`}
+                  className={`px-2 py-0.5 retro-btn ${audioSource === 'custom' ? 'bg-[#cec8e3] font-bold' : ''}`}
                 >
-                  Upload MP3
+                  Custom MP3
                 </button>
                 <button
                   type="button"
@@ -440,23 +413,21 @@ export default function UploadModal({
                     if (previewAudioRef.current) previewAudioRef.current.pause();
                     setAudioSource('none');
                   }}
-                  className={`px-3 py-1 rounded-md transition ${
-                    audioSource === 'none' ? 'bg-neutral-700 text-white' : 'text-neutral-400'
-                  }`}
+                  className={`px-2 py-0.5 retro-btn ${audioSource === 'none' ? 'bg-[#cec8e3] font-bold' : ''}`}
                 >
-                  No Music
+                  None
                 </button>
               </div>
             </div>
 
-            {/* A. Global Music Library (Spotify & Apple Music Catalog) */}
+            {/* Catalog Selector */}
             {audioSource === 'catalog' && (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {catalogTrack.url ? (
-                  <div className="space-y-3 p-3.5 rounded-2xl bg-neutral-800/80 border border-neutral-700 shadow-lg">
+                  <div className="retro-box-inset p-2.5 bg-white space-y-2">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3.5 min-w-0 pr-2">
-                        <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-md flex-shrink-0 bg-neutral-900 border border-white/10">
+                      <div className="flex items-center gap-2.5 min-w-0 pr-1">
+                        <div className="w-10 h-10 rounded-sm overflow-hidden border border-[#332d47] flex-shrink-0 bg-black">
                           {catalogTrack.artworkUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
@@ -465,52 +436,38 @@ export default function UploadModal({
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Disc3 className="w-6 h-6 text-amber-400 animate-spin" />
+                            <div className="w-full h-full flex items-center justify-center text-[8px] text-white">
+                              CD
                             </div>
                           )}
                         </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-bold text-xs text-white truncate">
-                              {catalogTrack.title}
-                            </h4>
-                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-semibold border border-emerald-500/30">
-                              Attached
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-neutral-400 truncate">
+                          <p className="font-bold text-xs truncate leading-tight">
+                            {catalogTrack.title}
+                          </p>
+                          <p className="text-[10px] text-neutral-600 truncate">
                             {catalogTrack.artist}
                           </p>
-                          <p className="text-[10px] text-amber-400 font-mono mt-0.5">
-                            Start offset: {formatTime(catalogTrack.startOffsetSeconds)}
+                          <p className="text-[10px] text-[#5a4897] font-bold">
+                            Offset: {formatTime(catalogTrack.startOffsetSeconds)}
                           </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {/* Play while attached button */}
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
                         <button
                           type="button"
                           onClick={toggleAudioTest}
-                          className={`p-2.5 rounded-full transition shadow-md ${
-                            isPlayingAudioTest
-                              ? 'bg-amber-500 text-black shadow-amber-500/30 animate-pulse'
-                              : 'bg-neutral-700 hover:bg-neutral-600 text-white'
-                          }`}
-                          title={isPlayingAudioTest ? 'Pause snippet' : 'Play attached track'}
+                          className="retro-btn"
+                          title="Preview Track"
                         >
-                          {isPlayingAudioTest ? (
-                            <Pause className="w-3.5 h-3.5 fill-black" />
-                          ) : (
-                            <Play className="w-3.5 h-3.5 fill-white translate-x-0.5" />
-                          )}
+                          {isPlayingAudioTest ? <Pause className="w-3 h-3 fill-black" /> : <Play className="w-3 h-3 fill-black" />}
                         </button>
 
                         <button
                           type="button"
                           onClick={() => setIsMusicModalOpen(true)}
-                          className="px-3 py-1.5 rounded-xl bg-neutral-700 hover:bg-neutral-600 text-white text-xs font-medium flex items-center gap-1.5 transition"
+                          className="retro-btn"
                         >
                           <Search className="w-3 h-3" />
                           <span>Change</span>
@@ -518,11 +475,11 @@ export default function UploadModal({
                       </div>
                     </div>
 
-                    {/* Scrubber for catalog track */}
-                    <div className="pt-2 border-t border-neutral-700/60 space-y-1.5">
-                      <div className="flex justify-between text-[11px] text-neutral-300">
-                        <span>Select Starting Point (Intro / Chorus):</span>
-                        <span className="text-amber-400 font-mono font-bold">
+                    {/* Scrubber */}
+                    <div className="pt-1.5 border-t border-neutral-200 space-y-1">
+                      <div className="flex justify-between text-[10px] text-neutral-600">
+                        <span>Starting point:</span>
+                        <span className="font-bold text-[#5a4897]">
                           {formatTime(catalogTrack.startOffsetSeconds)}
                         </span>
                       </div>
@@ -533,9 +490,9 @@ export default function UploadModal({
                         step="1"
                         value={Math.min(catalogTrack.startOffsetSeconds, 25)}
                         onChange={(e) => handleCatalogOffsetChange(parseInt(e.target.value, 10))}
-                        className="w-full accent-amber-500 h-1.5 bg-neutral-700 rounded-lg cursor-pointer"
+                        className="w-full accent-[#5a4897] h-1.5 bg-neutral-200 rounded cursor-pointer"
                       />
-                      <div className="flex justify-between text-[9px] text-neutral-500 font-mono">
+                      <div className="flex justify-between text-[9px] text-neutral-400">
                         <span>0:00 (Intro)</span>
                         <span>0:15 (Chorus)</span>
                         <span>0:25 (Outro)</span>
@@ -546,28 +503,21 @@ export default function UploadModal({
                   <button
                     type="button"
                     onClick={() => setIsMusicModalOpen(true)}
-                    className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl border-2 border-dashed border-amber-500/40 hover:border-amber-500 bg-amber-500/5 hover:bg-amber-500/10 text-amber-400 text-xs font-semibold transition"
+                    className="w-full retro-btn py-2.5 font-bold flex items-center justify-center gap-1.5"
                   >
-                    <Search className="w-4 h-4" />
-                    <span>Search Millions of Songs (Spotify & Apple Music Library)</span>
+                    <Search className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Search Global Music Library (Spotify & Apple Music)...</span>
                   </button>
                 )}
               </div>
             )}
 
-            {/* B. Custom Music File Upload */}
+            {/* Custom MP3 File */}
             {audioSource === 'custom' && (
-              <div className="space-y-3">
-                <label className="flex items-center gap-3 p-3 border border-neutral-700 rounded-xl bg-neutral-800/60 cursor-pointer hover:border-amber-500/80 transition">
-                  <div className="p-2 bg-neutral-700 rounded-lg">
-                    <Music className="w-4 h-4 text-amber-400" />
-                  </div>
-                  <div className="text-xs">
-                    <span className="font-medium text-white block">
-                      {customAudioFile ? customAudioFile.name : 'Choose an MP3, AAC, or WAV file'}
-                    </span>
-                    <span className="text-neutral-400 text-[10px]">Your personal music file</span>
-                  </div>
+              <div className="space-y-2">
+                <label className="retro-btn w-full py-2 flex items-center justify-center gap-2 cursor-pointer bg-white">
+                  <Music className="w-3.5 h-3.5 text-amber-600" />
+                  <span>{customAudioFile ? customAudioFile.name : 'Choose Audio File (.mp3, .wav)...'}</span>
                   <input
                     type="file"
                     accept="audio/*"
@@ -575,128 +525,32 @@ export default function UploadModal({
                     className="hidden"
                   />
                 </label>
-
-                {customAudioUrl && (
-                  <div className="space-y-3 p-3 rounded-xl bg-neutral-800/50 border border-neutral-700">
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div>
-                        <span className="text-neutral-400 text-[10px]">Song Title</span>
-                        <input
-                          type="text"
-                          value={customAudioTitle}
-                          onChange={(e) => setCustomAudioTitle(e.target.value)}
-                          className="w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg px-2.5 py-1.5 text-white text-xs"
-                        />
-                      </div>
-                      <div>
-                        <span className="text-neutral-400 text-[10px]">Artist</span>
-                        <input
-                          type="text"
-                          value={customAudioArtist}
-                          onChange={(e) => setCustomAudioArtist(e.target.value)}
-                          className="w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg px-2.5 py-1.5 text-white text-xs"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-1 pt-1">
-                      <div className="flex justify-between items-center text-[11px] text-neutral-300">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={toggleAudioTest}
-                            className={`p-1.5 rounded-full transition ${
-                              isPlayingAudioTest ? 'bg-amber-500 text-black' : 'bg-neutral-700 text-white'
-                            }`}
-                          >
-                            {isPlayingAudioTest ? (
-                              <Pause className="w-3 h-3 fill-current" />
-                            ) : (
-                              <Play className="w-3 h-3 fill-current translate-x-0.5" />
-                            )}
-                          </button>
-                          <span>Starting Point:</span>
-                        </div>
-                        <span className="text-amber-400 font-mono font-bold">
-                          {formatTime(customAudioStartOffset)} / {formatTime(customAudioDuration)}
-                        </span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max={Math.max(5, customAudioDuration - 5)}
-                        step="1"
-                        value={customAudioStartOffset}
-                        onChange={(e) => handleCustomOffsetChange(parseInt(e.target.value, 10))}
-                        className="w-full accent-amber-500 h-1.5 bg-neutral-700 rounded-lg cursor-pointer"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* C. Audio Mixer Balance (If Video) */}
-            {audioSource !== 'none' && fileType === 'video' && (
-              <div className="grid grid-cols-2 gap-4 pt-3 border-t border-neutral-800/80">
-                <div>
-                  <div className="flex justify-between text-[11px] text-neutral-400 mb-1">
-                    <span>Original Video Sound</span>
-                    <span className="text-white font-mono">{Math.round(videoVol * 100)}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={videoVol}
-                    onChange={(e) => setVideoVol(parseFloat(e.target.value))}
-                    className="w-full accent-amber-500 h-1 bg-neutral-700 rounded-lg cursor-pointer"
-                  />
-                </div>
-                <div>
-                  <div className="flex justify-between text-[11px] text-neutral-400 mb-1">
-                    <span>Soundtrack Volume</span>
-                    <span className="text-white font-mono">{Math.round(musicVol * 100)}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={musicVol}
-                    onChange={(e) => setMusicVol(parseFloat(e.target.value))}
-                    className="w-full accent-rose-500 h-1 bg-neutral-700 rounded-lg cursor-pointer"
-                  />
-                </div>
               </div>
             )}
           </div>
 
-          {/* 3. Details & Metadata */}
-          <div className="space-y-3">
+          {/* 3. Metadata Fields */}
+          <div className="retro-box-outset p-3 bg-[#dfdbed] space-y-2">
+            <span className="font-bold text-[#1a162b] block">3. Memory Details</span>
+
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1">
-                Title
-              </label>
+              <label className="block text-[10px] font-bold text-neutral-700 mb-0.5">Title:</label>
               <input
                 type="text"
-                placeholder="e.g. Sunset in Malibu"
+                placeholder="e.g. Summer Sunset 1999"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 transition"
+                className="w-full retro-box-inset px-2 py-1 text-xs text-black"
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1">
-                  Album
-                </label>
+                <label className="block text-[10px] font-bold text-neutral-700 mb-0.5">Album Folder:</label>
                 <select
                   value={albumId}
                   onChange={(e) => setAlbumId(e.target.value)}
-                  className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 transition"
+                  className="w-full retro-box-inset px-2 py-1 text-xs text-black"
                 >
                   {albums.map((a) => (
                     <option key={a.id} value={a.id}>
@@ -707,86 +561,64 @@ export default function UploadModal({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1">
-                  Location
-                </label>
-                <div className="relative">
-                  <MapPin className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-2.5" />
-                  <input
-                    type="text"
-                    placeholder="e.g. Kyoto, Japan"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="w-full bg-neutral-800 border border-neutral-700 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 transition"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1">
-                  Date
-                </label>
+                <label className="block text-[10px] font-bold text-neutral-700 mb-0.5">Date:</label>
                 <input
                   type="date"
                   value={takenAt}
                   onChange={(e) => setTakenAt(e.target.value)}
-                  className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 transition"
+                  className="w-full retro-box-inset px-2 py-1 text-xs text-black"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1">
-                Story Caption / Reflection
-              </label>
+              <label className="block text-[10px] font-bold text-neutral-700 mb-0.5">Location:</label>
+              <input
+                type="text"
+                placeholder="e.g. Kyoto, Japan"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="w-full retro-box-inset px-2 py-1 text-xs text-black"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold text-neutral-700 mb-0.5">Story Caption:</label>
               <textarea
                 rows={2}
-                placeholder="What made this moment unforgettable?"
+                placeholder="Story reflections..."
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
-                className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 transition"
+                className="w-full retro-box-inset px-2 py-1 text-xs text-black"
               />
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-neutral-800 bg-neutral-900/80">
-          <span className="text-[11px] text-neutral-400 flex items-center gap-1">
-            🔒 Saved permanently to your private lifetime vault
-          </span>
-          <div className="flex items-center gap-3">
+        {/* Wizard Footer Controls */}
+        <div className="px-4 py-2 bg-[#dfdbed] border-t border-white flex items-center justify-between">
+          <span className="text-[10px] text-neutral-600">Saved permanently to vault disk</span>
+          <div className="flex items-center gap-2">
             <button
               onClick={() => {
                 if (previewAudioRef.current) previewAudioRef.current.pause();
                 onClose();
               }}
-              className="px-4 py-2 text-xs font-medium text-neutral-400 hover:text-white transition"
+              className="retro-btn"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={isUploading}
-              className="px-5 py-2 text-xs font-semibold bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 disabled:opacity-50 text-white rounded-xl shadow-lg shadow-rose-500/20 transition flex items-center gap-1.5"
+              className="retro-btn bg-[#c5bee6] font-bold disabled:opacity-50"
             >
-              {isUploading ? (
-                <>
-                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Saving to Vault...</span>
-                </>
-              ) : (
-                <>
-                  <Check className="w-4 h-4" />
-                  <span>Save Memory</span>
-                </>
-              )}
+              {isUploading ? 'Installing...' : 'Finish [Save]'}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Global Music Search Modal (Spotify & Apple Music Library) */}
       <MusicSearchModal
         isOpen={isMusicModalOpen}
         onClose={() => setIsMusicModalOpen(false)}

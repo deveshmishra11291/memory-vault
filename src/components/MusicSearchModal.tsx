@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AudioTrack, formatTime } from '@/lib/types';
 import { 
-  Search, X, Play, Pause, Music, Sparkles, Check, 
-  Disc3, Flame, Coffee, Compass
+  Search, X, Play, Pause, Music, Disc3, Flame, Coffee, Compass, Sparkles, Check
 } from 'lucide-react';
 
 interface MusicSearchModalProps {
@@ -27,7 +26,6 @@ const CATEGORIES = [
   { id: 'chill', label: 'Acoustic Sunset', icon: Sparkles },
 ];
 
-// Apple / iTunes preview clips are 30 seconds long
 const MAX_PREVIEW_OFFSET = 25; // 0:00 to 0:25
 
 export default function MusicSearchModal({
@@ -49,7 +47,6 @@ export default function MusicSearchModal({
   const [startOffset, setStartOffset] = useState<number>(0);
   const [isPlayingStaged, setIsPlayingStaged] = useState<boolean>(false);
 
-  // Stop playback when modal closes
   useEffect(() => {
     if (!isOpen && audioPreviewRef.current) {
       audioPreviewRef.current.pause();
@@ -58,7 +55,6 @@ export default function MusicSearchModal({
     }
   }, [isOpen]);
 
-  // Fetch tracks
   const fetchTracks = async (query = '', category = 'trending') => {
     setIsLoading(true);
     try {
@@ -101,7 +97,6 @@ export default function MusicSearchModal({
     return () => clearTimeout(timer);
   }, [searchTerm, isOpen]);
 
-  // Helper to reliably seek and play
   const safePlay = (audio: HTMLAudioElement, targetOffset: number) => {
     const playPromise = () => {
       try {
@@ -113,8 +108,7 @@ export default function MusicSearchModal({
         }
         audio.play().then(() => {
           setIsPlayingStaged(true);
-        }).catch((err) => {
-          console.warn('Playback deferred:', err);
+        }).catch(() => {
           setIsPlayingStaged(false);
         });
       } catch (err) {
@@ -131,7 +125,6 @@ export default function MusicSearchModal({
     }
   };
 
-  // Toggle in-list audition
   const toggleAudition = (track: AudioTrack, e: React.MouseEvent) => {
     e.stopPropagation();
     const audio = audioPreviewRef.current;
@@ -154,7 +147,6 @@ export default function MusicSearchModal({
     }
   };
 
-  // Stage a track to adjust starting point
   const handleStageTrack = (track: AudioTrack) => {
     const audio = audioPreviewRef.current;
     if (!audio) return;
@@ -170,7 +162,6 @@ export default function MusicSearchModal({
     safePlay(audio, 0);
   };
 
-  // Toggle playback in the bottom trimmer
   const toggleStagedPlayback = () => {
     const audio = audioPreviewRef.current;
     if (!audio || !stagedTrack) return;
@@ -187,7 +178,6 @@ export default function MusicSearchModal({
     }
   };
 
-  // Move slider in trimmer
   const handleOffsetChange = (newOffset: number) => {
     const clamped = Math.max(0, Math.min(newOffset, MAX_PREVIEW_OFFSET));
     setStartOffset(clamped);
@@ -205,7 +195,6 @@ export default function MusicSearchModal({
     }
   };
 
-  // Confirm selection
   const handleConfirmTrack = () => {
     if (!stagedTrack) return;
     if (audioPreviewRef.current) audioPreviewRef.current.pause();
@@ -224,8 +213,7 @@ export default function MusicSearchModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl animate-in fade-in duration-200">
-      {/* Hidden audio element for previewing */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-[2px] font-mono text-xs select-none">
       <audio
         ref={audioPreviewRef}
         onEnded={() => {
@@ -237,92 +225,77 @@ export default function MusicSearchModal({
         }}
       />
 
-      <div className="relative w-full max-w-xl bg-neutral-900 border border-neutral-800 rounded-3xl shadow-2xl flex flex-col h-[82vh] overflow-hidden">
+      <div className="relative w-full max-w-xl retro-box-outset shadow-2xl flex flex-col h-[84vh] overflow-hidden">
         
-        {/* Header */}
-        <div className="p-5 pb-3 border-b border-neutral-800/80 bg-neutral-900/90">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-rose-500 flex items-center justify-center shadow-md">
-                <Music className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <h3 className="font-bold text-base text-white leading-tight">
-                  Music Library
-                </h3>
-                <p className="text-[11px] text-neutral-400">
-                  Global catalog (Spotify & Apple Music Library)
-                </p>
-              </div>
-            </div>
+        {/* Title Bar */}
+        <div className="retro-titlebar select-none">
+          <div className="flex items-center gap-2">
+            <Music className="w-3.5 h-3.5 text-white" />
+            <span>Audio Catalog Explorer 1999 — [Spotify & Apple Music]</span>
+          </div>
+          <button
+            onClick={() => {
+              if (audioPreviewRef.current) audioPreviewRef.current.pause();
+              onClose();
+            }}
+            className="retro-win-ctrl font-bold"
+          >
+            ✕
+          </button>
+        </div>
 
+        {/* Toolbar & Search Input */}
+        <div className="p-3 bg-[#dfdbed] border-b border-[#a09bb8] space-y-2">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Search artist, song name, or genre..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1 retro-box-inset px-2.5 py-1 text-xs bg-white text-black font-mono"
+            />
             <button
-              onClick={() => {
-                if (audioPreviewRef.current) audioPreviewRef.current.pause();
-                onClose();
-              }}
-              className="p-2 rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-white transition"
+              onClick={() => fetchTracks(searchTerm, activeCategory)}
+              className="retro-btn"
             >
-              <X className="w-5 h-5" />
+              <Search className="w-3 h-3" />
+              <span>Search</span>
             </button>
           </div>
 
-          {/* Search Input Bar */}
-          <div className="relative">
-            <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3" />
-            <input
-              type="text"
-              placeholder="Search millions of songs, artists, or albums..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-neutral-800/90 border border-neutral-700/80 focus:border-amber-500 rounded-2xl pl-10 pr-10 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none transition shadow-inner"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-3.5 top-3 text-neutral-400 hover:text-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-
           {/* Quick Categories */}
-          {!searchTerm && (
-            <div className="flex items-center gap-2 overflow-x-auto pt-3 pb-1 no-scrollbar">
-              {CATEGORIES.map((cat) => {
-                const Icon = cat.icon;
-                const isSelected = activeCategory === cat.id;
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => setActiveCategory(cat.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition ${
-                      isSelected
-                        ? 'bg-white text-black shadow-md font-semibold'
-                        : 'bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700'
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                    <span>{cat.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1">
+            {CATEGORIES.map((cat) => {
+              const isSelected = activeCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => {
+                    setActiveCategory(cat.id);
+                    setSearchTerm('');
+                  }}
+                  className={`px-2.5 py-1 retro-btn text-[10px] whitespace-nowrap ${
+                    isSelected ? 'bg-[#cec8e3] font-bold' : ''
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Track List Body */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-1.5">
+        <div className="flex-1 overflow-y-auto p-2 bg-[#f4f2fa] retro-box-inset m-1 space-y-1">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 text-neutral-500 space-y-3">
-              <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-              <p className="text-xs">Searching global music catalog...</p>
+            <div className="flex flex-col items-center justify-center py-20 text-neutral-500 space-y-2">
+              <div className="w-6 h-6 border-2 border-[#5a4897] border-t-transparent rounded-full animate-spin" />
+              <p className="text-xs">Buffering catalog...</p>
             </div>
           ) : tracks.length === 0 ? (
-            <div className="text-center py-20 text-neutral-400">
-              <Disc3 className="w-10 h-10 text-neutral-600 mx-auto mb-2 animate-spin" />
-              <p className="text-xs">No tracks found. Try searching for an artist or song name.</p>
+            <div className="text-center py-20 text-neutral-500">
+              <Disc3 className="w-8 h-8 text-neutral-400 mx-auto mb-1 animate-spin" />
+              <p className="text-xs">No tracks found. Try typing another song name.</p>
             </div>
           ) : (
             tracks.map((track) => {
@@ -333,15 +306,14 @@ export default function MusicSearchModal({
                 <div
                   key={track.id}
                   onClick={() => handleStageTrack(track)}
-                  className={`flex items-center justify-between p-2.5 rounded-2xl cursor-pointer transition group border ${
+                  className={`flex items-center justify-between p-2 retro-box-outset cursor-pointer transition ${
                     isStaged
-                      ? 'bg-amber-500/15 border-amber-500/50'
-                      : 'border-transparent hover:bg-neutral-800/60 hover:border-neutral-700/60'
+                      ? 'border-t-[#332d47] border-l-[#332d47] border-b-white border-r-white bg-[#cec8e3]'
+                      : 'hover:bg-[#eae7f7]'
                   }`}
                 >
-                  <div className="flex items-center gap-3 min-w-0 pr-3">
-                    {/* Album Artwork Cover */}
-                    <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-neutral-800 flex-shrink-0 shadow-md">
+                  <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                    <div className="w-8 h-8 rounded-sm overflow-hidden border border-[#332d47] flex-shrink-0 bg-black">
                       {track.artworkUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -350,54 +322,29 @@ export default function MusicSearchModal({
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-neutral-800">
-                          <Music className="w-5 h-5 text-neutral-500" />
-                        </div>
-                      )}
-
-                      {/* Small visualizer badge if playing */}
-                      {isAuditioning && (
-                        <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] flex items-center justify-center gap-0.5">
-                          <div className="w-1 h-3 bg-amber-400 rounded-full animate-bounce" />
-                          <div className="w-1 h-4 bg-amber-400 rounded-full animate-bounce [animation-delay:0.15s]" />
-                          <div className="w-1 h-2 bg-amber-400 rounded-full animate-bounce [animation-delay:0.3s]" />
+                        <div className="w-full h-full flex items-center justify-center text-[8px] text-white">
+                          CD
                         </div>
                       )}
                     </div>
-
-                    {/* Track Info */}
                     <div className="min-w-0">
-                      <h4 className="text-xs font-semibold text-white truncate group-hover:text-amber-400 transition">
+                      <p className="font-bold text-xs truncate leading-tight text-[#1a162b]">
                         {track.title}
-                      </h4>
-                      <p className="text-[11px] text-neutral-400 truncate">
+                      </p>
+                      <p className="text-[10px] text-neutral-600 truncate">
                         {track.artist}
                       </p>
-                      {track.albumName && (
-                        <p className="text-[10px] text-neutral-500 truncate">
-                          {track.albumName}
-                        </p>
-                      )}
                     </div>
                   </div>
 
-                  {/* Right Actions: Play Preview */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
                     <button
                       type="button"
                       onClick={(e) => toggleAudition(track, e)}
-                      className={`p-2.5 rounded-full transition ${
-                        isAuditioning
-                          ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
-                          : 'bg-neutral-800 text-white/80 hover:text-white hover:bg-neutral-700'
-                      }`}
-                      title={isAuditioning ? 'Pause preview' : 'Play preview'}
+                      className="retro-btn px-2 py-1"
+                      title={isAuditioning ? 'Stop Preview' : 'Audition'}
                     >
-                      {isAuditioning ? (
-                        <Pause className="w-3.5 h-3.5 fill-black" />
-                      ) : (
-                        <Play className="w-3.5 h-3.5 fill-white translate-x-0.5" />
-                      )}
+                      {isAuditioning ? <Pause className="w-3 h-3 fill-black" /> : <Play className="w-3 h-3 fill-black" />}
                     </button>
                   </div>
                 </div>
@@ -406,61 +353,47 @@ export default function MusicSearchModal({
           )}
         </div>
 
-        {/* Bottom Instagram-Style Scrubber (When a track is selected) */}
+        {/* Bottom Vintage Scrubber */}
         {stagedTrack && (
-          <div className="border-t border-neutral-800 bg-neutral-950/95 p-4 space-y-3 animate-in slide-in-from-bottom duration-200">
+          <div className="p-3 bg-[#dfdbed] border-t border-white space-y-2 select-none">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 min-w-0 pr-2">
+              <div className="flex items-center gap-2 min-w-0 pr-1">
                 {stagedTrack.artworkUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={stagedTrack.artworkUrl}
                     alt={stagedTrack.title}
-                    className="w-10 h-10 rounded-xl object-cover shadow border border-white/10"
+                    className="w-7 h-7 rounded-sm object-cover border border-[#332d47]"
                   />
                 )}
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-white truncate leading-tight">
-                    {stagedTrack.title}
-                  </p>
-                  <p className="text-[11px] text-neutral-400 truncate">
-                    {stagedTrack.artist}
-                  </p>
+                  <p className="font-bold text-xs text-[#1a162b] truncate">{stagedTrack.title}</p>
+                  <p className="text-[10px] text-neutral-600 truncate">{stagedTrack.artist}</p>
                 </div>
               </div>
 
               <button
                 onClick={handleConfirmTrack}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-white text-xs font-bold shadow-lg shadow-rose-500/20 transition flex-shrink-0"
+                className="retro-btn bg-[#c5bee6] font-bold flex-shrink-0"
               >
                 <Check className="w-3.5 h-3.5" />
-                <span>Attach Music</span>
+                <span>Attach Soundtrack</span>
               </button>
             </div>
 
-            {/* Scrubber / Offset Slider */}
-            <div className="bg-neutral-900/80 rounded-2xl p-3 border border-neutral-800 space-y-2">
-              <div className="flex items-center justify-between text-[11px]">
-                <div className="flex items-center gap-1.5 text-neutral-300">
-                  <button
-                    onClick={toggleStagedPlayback}
-                    className="p-1 rounded-full bg-neutral-800 hover:bg-neutral-700 text-white transition"
-                    title={isPlayingStaged ? 'Pause snippet' : 'Play snippet'}
-                  >
-                    {isPlayingStaged ? (
-                      <Pause className="w-3.5 h-3.5 fill-white" />
-                    ) : (
-                      <Play className="w-3.5 h-3.5 fill-white translate-x-0.5" />
-                    )}
+            <div className="retro-box-inset p-2 bg-white space-y-1.5">
+              <div className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center gap-1">
+                  <button onClick={toggleStagedPlayback} className="retro-btn px-1.5 py-0.5">
+                    {isPlayingStaged ? <Pause className="w-2.5 h-2.5 fill-black" /> : <Play className="w-2.5 h-2.5 fill-black" />}
                   </button>
-                  <span>Select Starting Point:</span>
+                  <span className="font-bold">Select Starting Second:</span>
                 </div>
-                <span className="font-mono font-bold text-amber-400">
+                <span className="font-mono font-bold text-[#5a4897]">
                   {formatTime(startOffset)}
                 </span>
               </div>
 
-              {/* Scrubber Range Bar (Bounded to 0..25 seconds) */}
               <input
                 type="range"
                 min="0"
@@ -468,9 +401,9 @@ export default function MusicSearchModal({
                 step="1"
                 value={startOffset}
                 onChange={(e) => handleOffsetChange(parseInt(e.target.value, 10))}
-                className="w-full accent-amber-500 h-1.5 bg-neutral-800 rounded-lg cursor-pointer"
+                className="w-full accent-[#5a4897] h-1.5 bg-neutral-200 rounded cursor-pointer"
               />
-              <div className="flex justify-between text-[10px] text-neutral-500 font-mono">
+              <div className="flex justify-between text-[9px] text-neutral-400 font-mono">
                 <span>0:00 (Intro)</span>
                 <span>0:15 (Chorus)</span>
                 <span>0:25 (Outro)</span>

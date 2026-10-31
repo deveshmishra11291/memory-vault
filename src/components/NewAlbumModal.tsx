@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Album } from '@/lib/types';
-import { X, FolderPlus, Sparkles, Check } from 'lucide-react';
+import { FolderPlus, X, Check } from 'lucide-react';
 
 interface NewAlbumModalProps {
   isOpen: boolean;
@@ -44,65 +44,55 @@ export default function NewAlbumModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      <div className="relative w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-900/60">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px] font-mono text-xs select-none">
+      <div className="w-full max-w-md retro-box-outset shadow-2xl flex flex-col overflow-hidden">
+        
+        {/* Title Bar */}
+        <div className="retro-titlebar select-none">
           <div className="flex items-center gap-2">
-            <FolderPlus className="w-5 h-5 text-amber-400" />
-            <h3 className="text-base font-bold text-white">Create New Album</h3>
+            <FolderPlus className="w-3.5 h-3.5 text-white" />
+            <span>New Album Folder — [C:\Vault\Albums]</span>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-white transition"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <button onClick={onClose} className="retro-win-ctrl font-bold">✕</button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
+        <div className="p-4 bg-[#f4f2fa] retro-box-inset m-1 space-y-3">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1">
-              Album Name
-            </label>
+            <label className="block text-[10px] font-bold text-neutral-700 mb-0.5">Album Folder Name:</label>
             <input
               type="text"
-              placeholder="e.g. Summer Memories 2024"
+              placeholder="e.g. Summer Memories 1999"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 transition"
+              className="w-full retro-box-inset px-2 py-1 text-xs text-black"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1">
-              Description
-            </label>
+            <label className="block text-[10px] font-bold text-neutral-700 mb-0.5">Description:</label>
             <input
               type="text"
-              placeholder="e.g. Road trips, camping, and laughs with friends"
+              placeholder="e.g. Road trips, camping, and laughs"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 transition"
+              className="w-full retro-box-inset px-2 py-1 text-xs text-black"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1">
-              Cover Image URL
-            </label>
+            <label className="block text-[10px] font-bold text-neutral-700 mb-0.5">Cover Image URL:</label>
             <input
               type="text"
               value={coverUrl}
               onChange={(e) => setCoverUrl(e.target.value)}
-              className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 transition"
+              className="w-full retro-box-inset px-2 py-1 text-xs text-black"
             />
-            <div className="mt-2 h-24 rounded-xl overflow-hidden border border-neutral-700">
+            <div className="mt-2 h-20 retro-box-inset overflow-hidden bg-black">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={coverUrl}
-                alt="Cover Preview"
+                alt="Preview"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -110,19 +100,10 @@ export default function NewAlbumModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-800 bg-neutral-900/80">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-neutral-400 hover:text-white transition"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-5 py-2 text-xs font-semibold bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-white rounded-xl shadow-lg transition flex items-center gap-1.5"
-          >
-            <Check className="w-4 h-4" />
-            Create Album
+        <div className="px-3 py-2 bg-[#dfdbed] border-t border-white flex justify-end gap-2">
+          <button onClick={onClose} className="retro-btn">Cancel</button>
+          <button onClick={handleSave} className="retro-btn bg-[#c5bee6] font-bold">
+            Create Folder
           </button>
         </div>
       </div>
