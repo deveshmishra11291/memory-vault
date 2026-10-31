@@ -36,15 +36,17 @@ export default function StoryViewer({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const currentItem = items[currentIndex];
+  const safeIndex = Math.min(Math.max(0, currentIndex), Math.max(0, items.length - 1));
+  const currentItem = items[safeIndex] || items[0];
 
   useEffect(() => {
-    if (isOpen) {
-      setCurrentIndex(initialIndex);
+    if (isOpen && items.length > 0) {
+      const validInitial = Math.min(Math.max(0, initialIndex), items.length - 1);
+      setCurrentIndex(validInitial);
       setProgress(0);
       setIsPaused(false);
     }
-  }, [isOpen, initialIndex]);
+  }, [isOpen, initialIndex, items.length]);
 
   useEffect(() => {
     if (currentItem?.audioMix) {

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Album } from '@/lib/types';
-import { Folder, FolderPlus, Check, X } from 'lucide-react';
+import { Folder, FolderPlus, Check, X, Copy, ArrowRight } from 'lucide-react';
 
 interface MoveToAlbumModalProps {
   isOpen: boolean;
@@ -10,7 +10,7 @@ interface MoveToAlbumModalProps {
   selectedItemIds: string[];
   albums: Album[];
   firstItemThumbnail?: string;
-  onConfirm: (itemIds: string[], targetAlbumId: string, newAlbum?: Album) => void;
+  onConfirm: (itemIds: string[], targetAlbumId: string, newAlbum?: Album, isMove?: boolean) => void;
 }
 
 export default function MoveToAlbumModal({
@@ -31,6 +31,9 @@ export default function MoveToAlbumModal({
   );
   const [newAlbumName, setNewAlbumName] = useState('');
   const [newAlbumDescription, setNewAlbumDescription] = useState('');
+  
+  // Default to COPY so original archive remains 100% intact!
+  const [isMove, setIsMove] = useState(false);
 
   if (!isOpen) return null;
 
@@ -40,7 +43,7 @@ export default function MoveToAlbumModal({
         alert('Please select an album!');
         return;
       }
-      onConfirm(selectedItemIds, selectedAlbumId);
+      onConfirm(selectedItemIds, selectedAlbumId, undefined, isMove);
       onClose();
     } else {
       if (!newAlbumName.trim()) {
@@ -57,7 +60,7 @@ export default function MoveToAlbumModal({
         itemCount: selectedItemIds.length,
       };
 
-      onConfirm(selectedItemIds, generatedId, newAlbum);
+      onConfirm(selectedItemIds, generatedId, newAlbum, isMove);
       setNewAlbumName('');
       setNewAlbumDescription('');
       onClose();
@@ -65,31 +68,63 @@ export default function MoveToAlbumModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-[2px] font-mono text-xs select-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-[2px] font-mono text-xs select-none">
       <div className="w-full max-w-md retro-box-outset shadow-2xl flex flex-col overflow-hidden">
         
         {/* Title Bar */}
         <div className="retro-titlebar select-none">
           <div className="flex items-center gap-2">
-            <Folder className="w-3.5 h-3.5 text-white" />
-            <span>Organize Memories — [Add to Album]</span>
+            <Copy className="w-3.5 h-3.5 text-white" />
+            <span>Copy / Add Stories to Album — [1999 Vault]</span>
           </div>
           <button onClick={onClose} className="retro-win-ctrl font-bold">✕</button>
         </div>
 
         {/* Header summary */}
         <div className="px-4 py-2 bg-[#dfdbed] border-b border-[#a09bb8] flex items-center justify-between">
-          <span className="font-bold text-[#1a162b]">
-            Moving {selectedItemIds.length} Selected Stor{selectedItemIds.length === 1 ? 'y' : 'ies'}
-          </span>
+          <div>
+            <h4 className="font-bold text-xs text-[#1a162b]">
+              Adding {selectedItemIds.length} Story{selectedItemIds.length === 1 ? '' : 'ies'} to Album
+            </h4>
+            <p className="text-[10px] text-emerald-800 font-bold">
+              ✓ Originals remain safe inside your Instagram Archive
+            </p>
+          </div>
           <span className="px-2 py-0.5 retro-box-inset bg-white text-[10px] text-[#5a4897] font-bold">
-            {selectedItemIds.length} item(s)
+            {selectedItemIds.length} selected
           </span>
         </div>
 
         {/* Modal Body */}
-        <div className="p-4 bg-[#f4f2fa] retro-box-inset m-1 space-y-4">
+        <div className="p-4 bg-[#f4f2fa] retro-box-inset m-1 space-y-3">
           
+          {/* Copy vs Move Choice */}
+          <div className="p-2.5 retro-box-outset bg-[#e7e4f2] space-y-1.5">
+            <span className="block font-bold text-[10px] text-neutral-700">Storage Behavior:</span>
+            <div className="flex flex-col gap-1">
+              <label className="flex items-center gap-2 text-xs font-bold text-[#1a162b] cursor-pointer">
+                <input
+                  type="radio"
+                  name="storageAction"
+                  checked={!isMove}
+                  onChange={() => setIsMove(false)}
+                  className="accent-[#5a4897] cursor-pointer"
+                />
+                <span>Copy &amp; Add (Keep original in Instagram Archive)</span>
+              </label>
+              <label className="flex items-center gap-2 text-xs text-neutral-600 cursor-pointer">
+                <input
+                  type="radio"
+                  name="storageAction"
+                  checked={isMove}
+                  onChange={() => setIsMove(true)}
+                  className="accent-[#5a4897] cursor-pointer"
+                />
+                <span>Move &amp; Transfer (Remove from original folder)</span>
+              </label>
+            </div>
+          </div>
+
           {/* Option 1: Existing Album */}
           <div 
             onClick={() => setMode('existing')}
@@ -103,7 +138,7 @@ export default function MoveToAlbumModal({
                 name="albumMode"
                 checked={mode === 'existing'}
                 onChange={() => setMode('existing')}
-                className="cursor-pointer"
+                className="cursor-pointer accent-[#5a4897]"
               />
               <Folder className="w-4 h-4 text-amber-600" />
               <span>Choose an Existing Album</span>
@@ -143,7 +178,7 @@ export default function MoveToAlbumModal({
                 name="albumMode"
                 checked={mode === 'new'}
                 onChange={() => setMode('new')}
-                className="cursor-pointer"
+                className="cursor-pointer accent-[#5a4897]"
               />
               <FolderPlus className="w-4 h-4 text-emerald-700" />
               <span>Create a New Album in Vault</span>
@@ -155,7 +190,7 @@ export default function MoveToAlbumModal({
                   <label className="block text-[10px] font-bold text-neutral-700 mb-0.5">New Album Name:</label>
                   <input
                     type="text"
-                    placeholder="e.g. Goa Trip 2024, College Days..."
+                    placeholder="e.g. Delhi Trip, College Friends..."
                     value={newAlbumName}
                     onChange={(e) => setNewAlbumName(e.target.value)}
                     className="w-full retro-box-inset px-2 py-1 text-xs text-black bg-white"
@@ -167,7 +202,7 @@ export default function MoveToAlbumModal({
                   <label className="block text-[10px] font-bold text-neutral-700 mb-0.5">Description (Optional):</label>
                   <input
                     type="text"
-                    placeholder="e.g. Unforgettable weekend with friends"
+                    placeholder="e.g. Unforgettable memories from the trip"
                     value={newAlbumDescription}
                     onChange={(e) => setNewAlbumDescription(e.target.value)}
                     className="w-full retro-box-inset px-2 py-1 text-xs text-black bg-white"
@@ -180,15 +215,15 @@ export default function MoveToAlbumModal({
 
         {/* Footer Actions */}
         <div className="px-4 py-2 bg-[#dfdbed] border-t border-white flex items-center justify-between">
-          <span className="text-[10px] text-neutral-500">Vault File System Manager</span>
+          <span className="text-[10px] text-neutral-500 font-bold">100% Private Lifetime Vault</span>
           <div className="flex items-center gap-2">
             <button onClick={onClose} className="retro-btn">Cancel</button>
             <button
               onClick={handleApply}
-              className="retro-btn bg-[#c5bee6] font-bold flex items-center gap-1"
+              className="retro-btn bg-[#c5bee6] font-bold flex items-center gap-1.5"
             >
               <Check className="w-3.5 h-3.5" />
-              <span>Confirm Move</span>
+              <span>{isMove ? 'Move' : 'Copy & Add'} to Album</span>
             </button>
           </div>
         </div>

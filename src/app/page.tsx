@@ -39,8 +39,42 @@ export default function Home() {
 
   // Initialize data on client load
   useEffect(() => {
-    const loadedMemories = loadMemories();
-    const loadedAlbums = loadAlbums();
+    let loadedMemories = loadMemories();
+    let loadedAlbums = loadAlbums();
+
+    // Ensure all original stories remain preserved in the Instagram Archive vault
+    const igAlbum = loadedAlbums.find(
+      (a) => a.id.includes('instagram') || a.name.toLowerCase().includes('instagram')
+    );
+    if (igAlbum) {
+      const missingFromIg: MediaItem[] = [];
+      loadedMemories.forEach((mem) => {
+        if (mem.album !== igAlbum.id && mem.album !== 'all') {
+          const alreadyInIg = loadedMemories.some(
+            (m) => m.album === igAlbum.id && (m.url === mem.url || m.title === mem.title)
+          );
+          if (!alreadyInIg) {
+            missingFromIg.push({
+              ...mem,
+              id: `ig-orig-${Date.now()}-${mem.id}`,
+              album: igAlbum.id,
+            });
+          }
+        }
+      });
+
+      if (missingFromIg.length > 0) {
+        loadedMemories = [...loadedMemories, ...missingFromIg];
+        saveMemories(loadedMemories);
+        loadedAlbums = loadedAlbums.map((alb) => {
+          if (alb.id === 'all') return { ...alb, itemCount: loadedMemories.length };
+          const count = loadedMemories.filter((m) => m.album === alb.id).length;
+          return { ...alb, itemCount: count };
+        });
+        saveAlbums(loadedAlbums);
+      }
+    }
+
     setMemories(loadedMemories);
     setAlbums(loadedAlbums);
   }, []);
@@ -54,7 +88,11 @@ export default function Home() {
   };
 
   const handleOpenStory = (index: number) => {
-    setStoryIndex(index);
+    const playlist = selectedAlbum === 'all'
+      ? memories
+      : memories.filter((m) => m.album === selectedAlbum);
+    const safeIdx = Math.min(Math.max(0, index), Math.max(0, playlist.length - 1));
+    setStoryIndex(safeIdx);
     setOpenWindows((prev) => ({ ...prev, story: true }));
     setActiveWindow('story');
   };
@@ -96,7 +134,12 @@ export default function Home() {
     setSelectedAlbum(newAlbum.id);
   };
 
-  const handleMoveItemsToAlbum = (itemIds: string[], targetAlbumId: string, newAlbum?: Album) => {
+  const handleMoveItemsToAlbum = (
+    itemIds: string[],
+    targetAlbumId: string,
+    newAlbum?: Album,
+    isMove: boolean = false
+  ) => {
     let updatedAlbums = [...albums];
     let finalAlbumId = targetAlbumId;
 
@@ -105,12 +148,26 @@ export default function Home() {
       finalAlbumId = newAlbum.id;
     }
 
-    const updatedMemories = memories.map((m) => {
-      if (itemIds.includes(m.id)) {
-        return { ...m, album: finalAlbumId };
-      }
-      return m;
-    });
+    let updatedMemories: MediaItem[];
+
+    if (isMove) {
+      // Transfer: modify item's album property
+      updatedMemories = memories.map((m) => {
+        if (itemIds.includes(m.id)) {
+          return { ...m, album: finalAlbumId };
+        }
+        return m;
+      });
+    } else {
+      // COPY: Keep original safe in archive/vault, add clone into destination album
+      const itemsToCopy = memories.filter((m) => itemIds.includes(m.id));
+      const copies: MediaItem[] = itemsToCopy.map((item, idx) => ({
+        ...item,
+        id: `copy-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+        album: finalAlbumId,
+      }));
+      updatedMemories = [...copies, ...memories];
+    }
 
     updatedAlbums = updatedAlbums.map((alb) => {
       if (alb.id === 'all') {

@@ -5,7 +5,8 @@ import { MediaItem, Album } from '@/lib/types';
 import { 
   Play, Film, Music, Heart, MapPin, Calendar, 
   Trash2, Sparkles, Image as ImageIcon, Folder, ArrowLeft, ArrowRight,
-  HardDrive, Plus, Search, Download, FolderPlus, CheckSquare, Square
+  HardDrive, Plus, Search, Download, FolderPlus, CheckSquare, Square,
+  Copy, Layers
 } from 'lucide-react';
 import MoveToAlbumModal from '@/components/MoveToAlbumModal';
 
@@ -22,7 +23,7 @@ interface AlbumGridProps {
   onOpenMusicSearch: () => void;
   onExportVault: () => void;
   onOpenIgImport: () => void;
-  onMoveItemsToAlbum: (itemIds: string[], targetAlbumId: string, newAlbum?: Album) => void;
+  onMoveItemsToAlbum: (itemIds: string[], targetAlbumId: string, newAlbum?: Album, isMove?: boolean) => void;
 }
 
 export default function AlbumGrid({
@@ -45,6 +46,7 @@ export default function AlbumGrid({
   // Selection & Album Organize Mode
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [targetMoveIds, setTargetMoveIds] = useState<string[]>([]);
 
@@ -55,10 +57,31 @@ export default function AlbumGrid({
 
   const activeAlbumObj = albums.find((a) => a.id === selectedAlbum) || albums[0];
 
+  const videoItems = filteredItems.filter((i) => i.type === 'video');
+  const photoItems = filteredItems.filter((i) => i.type === 'photo');
+
   const handleToggleSelectCard = (id: string) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
+  };
+
+  const handleCardClick = (index: number, id: string, e: React.MouseEvent) => {
+    if (isSelectMode) {
+      if (e.shiftKey && lastSelectedIndex !== null) {
+        // Shift+Click range selection (Windows/Mac standard)
+        const start = Math.min(lastSelectedIndex, index);
+        const end = Math.max(lastSelectedIndex, index);
+        const rangeIds = filteredItems.slice(start, end + 1).map((i) => i.id);
+        setSelectedIds((prev) => Array.from(new Set([...prev, ...rangeIds])));
+      } else {
+        handleToggleSelectCard(id);
+      }
+      setLastSelectedIndex(index);
+    } else {
+      // Play the story starting at this index within the current album playlist
+      onOpenStory(index);
+    }
   };
 
   const handleOpenMoveModal = (idsToMove: string[]) => {
@@ -67,8 +90,8 @@ export default function AlbumGrid({
     setMoveModalOpen(true);
   };
 
-  const handleConfirmMove = (itemIds: string[], targetAlbumId: string, newAlbum?: Album) => {
-    onMoveItemsToAlbum(itemIds, targetAlbumId, newAlbum);
+  const handleConfirmMove = (itemIds: string[], targetAlbumId: string, newAlbum?: Album, isMove?: boolean) => {
+    onMoveItemsToAlbum(itemIds, targetAlbumId, newAlbum, isMove);
     setSelectedIds([]);
     setIsSelectMode(false);
   };
@@ -122,19 +145,25 @@ export default function AlbumGrid({
           <span>New Album</span>
         </button>
 
-        {/* Select & Move to Album mode */}
+        {/* Multi-Select & Organize Stories */}
         <button
           onClick={() => {
-            setIsSelectMode(!isSelectMode);
-            setSelectedIds([]);
+            const nextMode = !isSelectMode;
+            setIsSelectMode(nextMode);
+            if (!nextMode) setSelectedIds([]);
           }}
           className={`retro-btn ${
-            isSelectMode ? 'bg-[#cec8e3] font-bold border-t-[#332d47] border-l-[#332d47]' : ''
+            isSelectMode ? 'bg-[#5a4897] text-white font-bold border-t-[#2d2642] border-l-[#2d2642]' : 'bg-[#ede9f7]'
           }`}
-          title="Select stories to add into another album"
+          title="Multi-select stories to copy or add into albums"
         >
-          <Folder className="w-3.5 h-3.5 text-[#5a4897]" />
-          <span>{isSelectMode ? 'Done Selecting' : 'Select & Move'}</span>
+          <CheckSquare className="w-3.5 h-3.5" />
+          <span>{isSelectMode ? 'Exit Multi-Select' : 'Multi-Select'}</span>
+          {selectedIds.length > 0 && (
+            <span className="ml-1 px-1 py-0.2 bg-amber-400 text-black text-[9px] rounded-sm font-bold">
+              {selectedIds.length}
+            </span>
+          )}
         </button>
 
         <button
@@ -162,7 +191,7 @@ export default function AlbumGrid({
             title="Play All Stories with Soundtrack"
           >
             <Play className="w-3.5 h-3.5 fill-black" />
-            <span>Play Stories (90s)</span>
+            <span>Play Stories ({filteredItems.length})</span>
           </button>
         )}
 
@@ -176,26 +205,54 @@ export default function AlbumGrid({
         </button>
       </div>
 
-      {/* Select Mode Sticky Banner */}
+      {/* Multi-Select Sticky Actions Bar */}
       {isSelectMode && (
-        <div className="px-3 py-2 bg-[#d8d2ee] border-b border-[#a09bb8] flex flex-wrap items-center justify-between gap-2 select-none">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-xs text-[#1a162b] flex items-center gap-1.5">
-              <CheckSquare className="w-4 h-4 text-[#5a4897]" />
-              {selectedIds.length} of {filteredItems.length} Stories Selected
+        <div className="px-3 py-2 bg-[#d8d2ee] border-b border-[#a09bb8] flex flex-wrap items-center justify-between gap-2 select-none animate-fadeIn">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-bold text-xs text-[#1a162b] flex items-center gap-1.5 mr-1">
+              <Layers className="w-4 h-4 text-[#5a4897]" />
+              {selectedIds.length} of {filteredItems.length} Selected
             </span>
+
+            {/* Quick multi-select buttons */}
             <button
               onClick={() => setSelectedIds(filteredItems.map((i) => i.id))}
-              className="retro-btn text-[10px] py-0.5"
+              className="retro-btn text-[10px] py-0.5 font-bold"
+              title="Select all stories in this album at once"
             >
-              Select All
+              Select All ({filteredItems.length})
             </button>
+
+            {videoItems.length > 0 && (
+              <button
+                onClick={() => setSelectedIds(videoItems.map((i) => i.id))}
+                className="retro-btn text-[10px] py-0.5"
+                title="Select all videos in this album"
+              >
+                Videos ({videoItems.length})
+              </button>
+            )}
+
+            {photoItems.length > 0 && (
+              <button
+                onClick={() => setSelectedIds(photoItems.map((i) => i.id))}
+                className="retro-btn text-[10px] py-0.5"
+                title="Select all photos in this album"
+              >
+                Photos ({photoItems.length})
+              </button>
+            )}
+
             <button
               onClick={() => setSelectedIds([])}
               className="retro-btn text-[10px] py-0.5"
             >
               Clear
             </button>
+            
+            <span className="text-[10px] text-neutral-500 italic hidden md:inline ml-1">
+              (Tip: Hold Shift to range-select multiple)
+            </span>
           </div>
 
           <button
@@ -207,8 +264,8 @@ export default function AlbumGrid({
                 : 'opacity-50 cursor-not-allowed'
             }`}
           >
-            <FolderPlus className="w-3.5 h-3.5" />
-            <span>Add / Move to Album...</span>
+            <Copy className="w-3.5 h-3.5" />
+            <span>Copy &amp; Add to Album ({selectedIds.length})...</span>
           </button>
         </div>
       )}
@@ -222,14 +279,17 @@ export default function AlbumGrid({
         </div>
       </div>
 
-      {/* 5. Highlight Folders (Instagram Story Circles — 1999 Edition) */}
+      {/* 5. Highlight Folders (Story Circles — 1999 Edition) */}
       <div className="p-3 bg-[#e8e5f2] border-b border-[#a09bb8] flex items-center gap-3 overflow-x-auto select-none">
         {albums.map((album) => {
           const isSelected = selectedAlbum === album.id;
           return (
             <div
               key={album.id}
-              onClick={() => onSelectAlbum(album.id)}
+              onClick={() => {
+                onSelectAlbum(album.id);
+                setSelectedIds([]);
+              }}
               className={`flex items-center gap-2 px-3 py-1.5 retro-box-outset cursor-pointer transition flex-shrink-0 ${
                 isSelected
                   ? 'border-t-[#332d47] border-l-[#332d47] border-b-white border-r-white bg-[#cec8e3]'
@@ -270,20 +330,13 @@ export default function AlbumGrid({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
             {filteredItems.map((item, index) => {
-              const globalIndex = items.findIndex((m) => m.id === item.id);
               const isSelected = selectedIds.includes(item.id);
               const itemAlbumObj = albums.find((a) => a.id === item.album);
 
               return (
                 <div
                   key={item.id}
-                  onClick={() => {
-                    if (isSelectMode) {
-                      handleToggleSelectCard(item.id);
-                    } else {
-                      onOpenStory(globalIndex >= 0 ? globalIndex : index);
-                    }
-                  }}
+                  onClick={(e) => handleCardClick(index, item.id, e)}
                   className={`retro-box-outset p-2 bg-[#dfdbed] cursor-pointer hover:bg-[#eae7f7] transition group flex flex-col justify-between relative ${
                     isSelected ? 'ring-2 ring-[#5a4897] bg-[#cec8e3]' : ''
                   }`}
@@ -365,13 +418,13 @@ export default function AlbumGrid({
                       </h4>
                       
                       <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        {/* Quick Move to Album button */}
+                        {/* Quick Copy/Add to Album button */}
                         <button
                           onClick={() => handleOpenMoveModal([item.id])}
                           className="p-1 hover:bg-[#cec8e3] rounded text-[#5a4897]"
-                          title="Move or add to another album"
+                          title="Copy or add to another album"
                         >
-                          <FolderPlus className="w-3.5 h-3.5" />
+                          <Copy className="w-3.5 h-3.5" />
                         </button>
 
                         <button
@@ -415,7 +468,7 @@ export default function AlbumGrid({
         <span>Disk: 100% Private Encrypted Vault</span>
       </div>
 
-      {/* Move / Add to Album Dialog */}
+      {/* Copy / Add to Album Dialog */}
       <MoveToAlbumModal
         isOpen={moveModalOpen}
         onClose={() => setMoveModalOpen(false)}
