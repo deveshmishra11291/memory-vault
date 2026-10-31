@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { AudioTrack } from '@/lib/types';
+import { AudioTrack, formatTime } from '@/lib/types';
 import { 
   Search, X, Play, Pause, Music, Sparkles, Check, 
-  Volume2, Sliders, Disc3, TrendingUp, Flame, Coffee, Compass
+  Disc3, Flame, Coffee, Compass
 } from 'lucide-react';
 
 interface MusicSearchModalProps {
@@ -27,27 +27,38 @@ const CATEGORIES = [
   { id: 'chill', label: 'Acoustic Sunset', icon: Sparkles },
 ];
 
+// Apple / iTunes preview clips are 30 seconds long
+const MAX_PREVIEW_OFFSET = 25; // 0:00 to 0:25
+
 export default function MusicSearchModal({
   isOpen,
   onClose,
   onSelectTrack,
-  initialSelectedUrl,
 }: MusicSearchModalProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('trending');
   const [tracks, setTracks] = useState<AudioTrack[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Audition / Preview playback state
+  // Audition in list
   const [auditioningTrackId, setAuditioningTrackId] = useState<string | null>(null);
   const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
 
-  // Instagram-style Selected Track Trimmer
+  // Staged track for trimming
   const [stagedTrack, setStagedTrack] = useState<AudioTrack | null>(null);
   const [startOffset, setStartOffset] = useState<number>(0);
   const [isPlayingStaged, setIsPlayingStaged] = useState<boolean>(false);
 
-  // Fetch tracks from our backend iTunes/Streaming API
+  // Stop playback when modal closes
+  useEffect(() => {
+    if (!isOpen && audioPreviewRef.current) {
+      audioPreviewRef.current.pause();
+      setAuditioningTrackId(null);
+      setIsPlayingStaged(false);
+    }
+  }, [isOpen]);
+
+  // Fetch tracks
   const fetchTracks = async (query = '', category = 'trending') => {
     setIsLoading(true);
     try {
@@ -71,16 +82,12 @@ export default function MusicSearchModal({
     }
   };
 
-  // Initial load or category change
   useEffect(() => {
-    if (isOpen) {
-      if (!searchTerm.trim()) {
-        fetchTracks('', activeCategory);
-      }
+    if (isOpen && !searchTerm.trim()) {
+      fetchTracks('', activeCategory);
     }
   }, [isOpen, activeCategory]);
 
-  // Debounced search on user input
   useEffect(() => {
     if (!isOpen) return;
     const timer = setTimeout(() => {
@@ -94,62 +101,106 @@ export default function MusicSearchModal({
     return () => clearTimeout(timer);
   }, [searchTerm, isOpen]);
 
-  // Handle Auditioning in the list
-  const toggleAudition = (track: AudioTrack, e: React.MouseEvent) => {
-    e.stopPropagation();
-
-    if (auditioningTrackId === track.id) {
-      audioPreviewRef.current?.pause();
-      setAuditioningTrackId(null);
-    } else {
-      if (audioPreviewRef.current) {
-        audioPreviewRef.current.src = track.url;
-        audioPreviewRef.current.currentTime = 0;
-        audioPreviewRef.current.play().then(() => {
-          setAuditioningTrackId(track.id);
-        }).catch(console.error);
+  // Helper to reliably seek and play
+  const safePlay = (audio: HTMLAudioElement, targetOffset: number) => {
+    const playPromise = () => {
+      try {
+        const safe = Math.min(targetOffset, MAX_PREVIEW_OFFSET);
+        if (!isNaN(audio.duration) && audio.duration > 0) {
+          audio.currentTime = Math.min(safe, Math.max(0, audio.duration - 2));
+        } else {
+          audio.currentTime = safe;
+        }
+        audio.play().then(() => {
+          setIsPlayingStaged(true);
+        }).catch((err) => {
+          console.warn('Playback deferred:', err);
+          setIsPlayingStaged(false);
+        });
+      } catch (err) {
+        console.error('SafePlay seek error:', err);
       }
+    };
+
+    if (audio.readyState >= 1) {
+      playPromise();
+    } else {
+      audio.onloadedmetadata = () => {
+        playPromise();
+      };
     }
   };
 
-  // Stage a track to adjust start offset trimmer (Instagram style)
+  // Toggle in-list audition
+  const toggleAudition = (track: AudioTrack, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const audio = audioPreviewRef.current;
+    if (!audio) return;
+
+    if (auditioningTrackId === track.id) {
+      audio.pause();
+      setAuditioningTrackId(null);
+    } else {
+      audio.pause();
+      setIsPlayingStaged(false);
+      audio.src = track.url;
+      audio.load();
+      audio.onloadedmetadata = () => {
+        audio.currentTime = 0;
+        audio.play().then(() => {
+          setAuditioningTrackId(track.id);
+        }).catch(console.error);
+      };
+    }
+  };
+
+  // Stage a track to adjust starting point
   const handleStageTrack = (track: AudioTrack) => {
-    // Stop list audition
-    if (audioPreviewRef.current) audioPreviewRef.current.pause();
+    const audio = audioPreviewRef.current;
+    if (!audio) return;
+
+    audio.pause();
     setAuditioningTrackId(null);
 
     setStagedTrack(track);
     setStartOffset(0);
-    setIsPlayingStaged(true);
 
-    if (audioPreviewRef.current) {
-      audioPreviewRef.current.src = track.url;
-      audioPreviewRef.current.currentTime = 0;
-      audioPreviewRef.current.play().catch(console.error);
-    }
+    audio.src = track.url;
+    audio.load();
+    safePlay(audio, 0);
   };
 
-  // Toggle playback in trimmer view
+  // Toggle playback in the bottom trimmer
   const toggleStagedPlayback = () => {
-    if (!audioPreviewRef.current || !stagedTrack) return;
+    const audio = audioPreviewRef.current;
+    if (!audio || !stagedTrack) return;
+
     if (isPlayingStaged) {
-      audioPreviewRef.current.pause();
+      audio.pause();
       setIsPlayingStaged(false);
     } else {
-      audioPreviewRef.current.currentTime = startOffset;
-      audioPreviewRef.current.play().then(() => {
-        setIsPlayingStaged(true);
-      }).catch(console.error);
+      if (audio.src !== stagedTrack.url) {
+        audio.src = stagedTrack.url;
+        audio.load();
+      }
+      safePlay(audio, startOffset);
     }
   };
 
-  // Update offset in trimmer
+  // Move slider in trimmer
   const handleOffsetChange = (newOffset: number) => {
-    setStartOffset(newOffset);
-    if (audioPreviewRef.current && stagedTrack) {
-      audioPreviewRef.current.currentTime = newOffset;
-      if (!isPlayingStaged) {
-        audioPreviewRef.current.play().then(() => setIsPlayingStaged(true)).catch(() => {});
+    const clamped = Math.max(0, Math.min(newOffset, MAX_PREVIEW_OFFSET));
+    setStartOffset(clamped);
+
+    const audio = audioPreviewRef.current;
+    if (audio && stagedTrack) {
+      try {
+        audio.currentTime = clamped;
+        if (!isPlayingStaged) {
+          audio.play().then(() => setIsPlayingStaged(true)).catch(() => {});
+        }
+      } catch (err) {
+        console.error('Offset seek error:', err);
       }
     }
   };
@@ -164,7 +215,7 @@ export default function MusicSearchModal({
       artist: stagedTrack.artist,
       url: stagedTrack.url,
       artworkUrl: stagedTrack.artworkUrl,
-      startOffsetSeconds: startOffset,
+      startOffsetSeconds: Math.min(startOffset, MAX_PREVIEW_OFFSET),
     });
 
     onClose();
@@ -180,6 +231,9 @@ export default function MusicSearchModal({
         onEnded={() => {
           setAuditioningTrackId(null);
           setIsPlayingStaged(false);
+        }}
+        onPause={() => {
+          if (!auditioningTrackId) setIsPlayingStaged(false);
         }}
       />
 
@@ -197,7 +251,7 @@ export default function MusicSearchModal({
                   Music Library
                 </h3>
                 <p className="text-[11px] text-neutral-400">
-                  Global catalog (Spotify & Apple Music library)
+                  Global catalog (Spotify & Apple Music Library)
                 </p>
               </div>
             </div>
@@ -213,7 +267,7 @@ export default function MusicSearchModal({
             </button>
           </div>
 
-          {/* Search Input Bar (Instagram style) */}
+          {/* Search Input Bar */}
           <div className="relative">
             <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3" />
             <input
@@ -233,7 +287,7 @@ export default function MusicSearchModal({
             )}
           </div>
 
-          {/* Quick Categories Pills */}
+          {/* Quick Categories */}
           {!searchTerm && (
             <div className="flex items-center gap-2 overflow-x-auto pt-3 pb-1 no-scrollbar">
               {CATEGORIES.map((cat) => {
@@ -245,7 +299,7 @@ export default function MusicSearchModal({
                     onClick={() => setActiveCategory(cat.id)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition ${
                       isSelected
-                        ? 'bg-white text-black shadow-md'
+                        ? 'bg-white text-black shadow-md font-semibold'
                         : 'bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700'
                     }`}
                   >
@@ -327,7 +381,7 @@ export default function MusicSearchModal({
                     </div>
                   </div>
 
-                  {/* Right Actions: Play Preview & Select */}
+                  {/* Right Actions: Play Preview */}
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -352,7 +406,7 @@ export default function MusicSearchModal({
           )}
         </div>
 
-        {/* Bottom Instagram-Style Scrubber & Confirm Drawer (When a track is staged) */}
+        {/* Bottom Instagram-Style Scrubber (When a track is selected) */}
         {stagedTrack && (
           <div className="border-t border-neutral-800 bg-neutral-950/95 p-4 space-y-3 animate-in slide-in-from-bottom duration-200">
             <div className="flex items-center justify-between">
@@ -390,35 +444,36 @@ export default function MusicSearchModal({
                 <div className="flex items-center gap-1.5 text-neutral-300">
                   <button
                     onClick={toggleStagedPlayback}
-                    className="p-1 rounded-full bg-neutral-800 hover:bg-neutral-700 text-white"
+                    className="p-1 rounded-full bg-neutral-800 hover:bg-neutral-700 text-white transition"
+                    title={isPlayingStaged ? 'Pause snippet' : 'Play snippet'}
                   >
                     {isPlayingStaged ? (
-                      <Pause className="w-3 h-3 fill-white" />
+                      <Pause className="w-3.5 h-3.5 fill-white" />
                     ) : (
-                      <Play className="w-3 h-3 fill-white translate-x-0.5" />
+                      <Play className="w-3.5 h-3.5 fill-white translate-x-0.5" />
                     )}
                   </button>
                   <span>Select Starting Point:</span>
                 </div>
                 <span className="font-mono font-bold text-amber-400">
-                  0:{startOffset < 10 ? `0${startOffset}` : startOffset}
+                  {formatTime(startOffset)}
                 </span>
               </div>
 
-              {/* Scrubber Range Bar */}
+              {/* Scrubber Range Bar (Bounded to 0..25 seconds) */}
               <input
                 type="range"
                 min="0"
-                max={Math.max((stagedTrack.durationSeconds || 30) - 5, 25)}
+                max={MAX_PREVIEW_OFFSET}
                 step="1"
                 value={startOffset}
                 onChange={(e) => handleOffsetChange(parseInt(e.target.value, 10))}
                 className="w-full accent-amber-500 h-1.5 bg-neutral-800 rounded-lg cursor-pointer"
               />
-              <div className="flex justify-between text-[9px] text-neutral-500">
+              <div className="flex justify-between text-[10px] text-neutral-500 font-mono">
                 <span>0:00 (Intro)</span>
                 <span>0:15 (Chorus)</span>
-                <span>0:{Math.max((stagedTrack.durationSeconds || 30) - 5, 25)}</span>
+                <span>0:25 (Outro)</span>
               </div>
             </div>
           </div>

@@ -59,7 +59,8 @@ export async function GET(req: NextRequest) {
           albumName: item.collectionName || 'Single',
           artworkUrl: highResArtwork || item.artworkUrl100,
           url: item.previewUrl,
-          durationSeconds: Math.round(item.trackTimeMillis / 1000) || 30,
+          durationSeconds: 30, // Apple/iTunes preview audio is a 30s stream
+          fullTrackDurationSeconds: Math.round(item.trackTimeMillis / 1000) || 30,
           source: 'library' as const,
         };
       });

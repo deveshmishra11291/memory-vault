@@ -110,13 +110,30 @@ export default function StoryViewer({
     // Background soundtrack initialization
     if (audioRef.current) {
       if (currentItem.audioTrack) {
-        audioRef.current.src = currentItem.audioTrack.url;
-        audioRef.current.currentTime = currentItem.audioTrack.startOffsetSeconds || 0;
-        audioRef.current.volume = isMuted ? 0 : musicVol;
-        if (!isPaused) {
-          audioRef.current.play().catch(() => {
-            // Autoplay policy fallback: muted on user interaction
-          });
+        const audio = audioRef.current;
+        const targetOffset = currentItem.audioTrack.startOffsetSeconds || 0;
+        audio.volume = isMuted ? 0 : musicVol;
+
+        const applySeekAndPlay = () => {
+          try {
+            const maxSafe = !isNaN(audio.duration) && audio.duration > 2
+              ? Math.floor(audio.duration) - 2
+              : 25;
+            audio.currentTime = Math.max(0, Math.min(targetOffset, maxSafe));
+            if (!isPaused) {
+              audio.play().catch(() => {});
+            }
+          } catch {
+            if (!isPaused) audio.play().catch(() => {});
+          }
+        };
+
+        if (audio.src === currentItem.audioTrack.url && audio.readyState >= 1) {
+          applySeekAndPlay();
+        } else {
+          audio.src = currentItem.audioTrack.url;
+          audio.load();
+          audio.onloadedmetadata = applySeekAndPlay;
         }
       } else {
         audioRef.current.pause();
