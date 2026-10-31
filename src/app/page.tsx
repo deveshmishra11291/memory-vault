@@ -96,17 +96,65 @@ export default function Home() {
     setSelectedAlbum(newAlbum.id);
   };
 
-  const handleImportComplete = (importedItems: MediaItem[], newAlbum: Album) => {
-    const updatedMemories = [...importedItems, ...memories];
-    const updatedAlbums = [
-      ...albums.map((a) => (a.id === 'all' ? { ...a, itemCount: a.itemCount + importedItems.length } : a)),
-      newAlbum,
-    ];
+  const handleMoveItemsToAlbum = (itemIds: string[], targetAlbumId: string, newAlbum?: Album) => {
+    let updatedAlbums = [...albums];
+    let finalAlbumId = targetAlbumId;
+
+    if (newAlbum && !updatedAlbums.some((a) => a.id === newAlbum.id)) {
+      updatedAlbums.push(newAlbum);
+      finalAlbumId = newAlbum.id;
+    }
+
+    const updatedMemories = memories.map((m) => {
+      if (itemIds.includes(m.id)) {
+        return { ...m, album: finalAlbumId };
+      }
+      return m;
+    });
+
+    updatedAlbums = updatedAlbums.map((alb) => {
+      if (alb.id === 'all') {
+        return { ...alb, itemCount: updatedMemories.length };
+      }
+      const count = updatedMemories.filter((m) => m.album === alb.id).length;
+      return { ...alb, itemCount: count };
+    });
+
     setMemories(updatedMemories);
     setAlbums(updatedAlbums);
     saveMemories(updatedMemories);
     saveAlbums(updatedAlbums);
-    setSelectedAlbum(newAlbum.id);
+    setSelectedAlbum(finalAlbumId);
+  };
+
+  const handleImportComplete = (importedItems: MediaItem[], newAlbums?: Album[]) => {
+    const updatedMemories = [...importedItems, ...memories];
+    let updatedAlbums = [...albums];
+
+    if (newAlbums && newAlbums.length > 0) {
+      for (const na of newAlbums) {
+        if (!updatedAlbums.some((a) => a.id === na.id)) {
+          updatedAlbums.push(na);
+        }
+      }
+    }
+
+    updatedAlbums = updatedAlbums.map((alb) => {
+      if (alb.id === 'all') {
+        return { ...alb, itemCount: updatedMemories.length };
+      }
+      const count = updatedMemories.filter((m) => m.album === alb.id).length;
+      return { ...alb, itemCount: count };
+    });
+
+    setMemories(updatedMemories);
+    setAlbums(updatedAlbums);
+    saveMemories(updatedMemories);
+    saveAlbums(updatedAlbums);
+
+    if (newAlbums && newAlbums.length > 0 && newAlbums[0]) {
+      setSelectedAlbum(newAlbums[0].id);
+    }
   };
 
   const handleExportVault = () => {
@@ -263,6 +311,7 @@ export default function Home() {
               onOpenMusicSearch={() => handleToggleWindow('music')}
               onExportVault={handleExportVault}
               onOpenIgImport={() => handleToggleWindow('igImport')}
+              onMoveItemsToAlbum={handleMoveItemsToAlbum}
             />
           )}
         </div>
@@ -308,6 +357,7 @@ export default function Home() {
         isOpen={openWindows.igImport}
         onClose={() => setOpenWindows((prev) => ({ ...prev, igImport: false }))}
         onImportComplete={handleImportComplete}
+        albums={albums}
       />
 
       {/* Window: New Album Folder Dialog */}

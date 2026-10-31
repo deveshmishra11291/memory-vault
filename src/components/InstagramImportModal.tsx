@@ -5,14 +5,16 @@ import JSZip from 'jszip';
 import { MediaItem, Album } from '@/lib/types';
 import { 
   Camera, X, UploadCloud, Check, Sparkles, Folder, 
-  Film, Image as ImageIcon, ShieldCheck, ArrowRight, Music, AlertCircle, Trash2, Eye
+  Film, Image as ImageIcon, ShieldCheck, ArrowRight, Music, AlertCircle, 
+  Trash2, Eye, FolderPlus
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface InstagramImportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImportComplete: (items: MediaItem[], album: Album) => void;
+  onImportComplete: (items: MediaItem[], newAlbums?: Album[]) => void;
+  albums: Album[];
 }
 
 interface DetectedItem {
@@ -25,21 +27,37 @@ interface DetectedItem {
   songTitle?: string;
   artistName?: string;
   selected: boolean;
+  targetAlbumId: string;
+  targetAlbumName: string;
 }
 
 export default function InstagramImportModal({
   isOpen,
   onClose,
   onImportComplete,
+  albums,
 }: InstagramImportModalProps) {
+  const availableAlbums = albums.filter((a) => a.id !== 'all');
+
   const [step, setStep] = useState<'intro' | 'parsing' | 'preview' | 'importing' | 'done'>('intro');
   const [detectedItems, setDetectedItems] = useState<DetectedItem[]>([]);
   const [importProgress, setImportProgress] = useState(0);
-  const [albumName, setAlbumName] = useState('Instagram Archive 📸');
   const [errorMessage, setErrorMessage] = useState('');
   const [enlargedItem, setEnlargedItem] = useState<DetectedItem | null>(null);
 
+  // Album choice for import
+  const [albumChoice, setAlbumChoice] = useState<string>('__new__'); // '__new__' or album.id
+  const [customAlbumName, setCustomAlbumName] = useState('Instagram Archive 📸');
+
   if (!isOpen) return null;
+
+  const currentAlbumName = albumChoice === '__new__' 
+    ? (customAlbumName.trim() || 'Instagram Archive') 
+    : (availableAlbums.find((a) => a.id === albumChoice)?.name || 'Custom Album');
+
+  const currentAlbumId = albumChoice === '__new__'
+    ? currentAlbumName.toLowerCase().replace(/[^a-z0-9]/g, '-')
+    : albumChoice;
 
   // Process dropped or selected ZIP file
   const handleZipFile = async (file: File) => {
@@ -83,7 +101,6 @@ export default function InstagramImportModal({
         const isPhoto = lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.png') || lower.endsWith('.webp') || lower.endsWith('.heic');
 
         if (isVideo || isPhoto) {
-          // Check if this file is in stories, posts, or media folders
           if (lower.includes('stories') || lower.includes('media') || lower.includes('content') || items.length < 50) {
             const blob = await zipEntry.async('blob');
             const previewUrl = URL.createObjectURL(blob);
@@ -125,6 +142,8 @@ export default function InstagramImportModal({
               songTitle,
               artistName,
               selected: true,
+              targetAlbumId: currentAlbumId,
+              targetAlbumName: currentAlbumName,
             });
           }
         }
@@ -151,9 +170,7 @@ export default function InstagramImportModal({
   // Selection & Removal Handlers
   const handleRemoveItem = (id: string) => {
     setDetectedItems((prev) => prev.filter((item) => item.id !== id));
-    if (enlargedItem?.id === id) {
-      setEnlargedItem(null);
-    }
+    if (enlargedItem?.id === id) setEnlargedItem(null);
   };
 
   const handleToggleSelect = (id: string) => {
@@ -170,6 +187,28 @@ export default function InstagramImportModal({
     setDetectedItems((prev) => prev.filter((item) => item.selected));
   };
 
+  // Batch assign album to all selected items
+  const handleApplyAlbumToSelected = (albId: string, albName: string) => {
+    setDetectedItems((prev) =>
+      prev.map((item) =>
+        item.selected
+          ? { ...item, targetAlbumId: albId, targetAlbumName: albName }
+          : item
+      )
+    );
+  };
+
+  // Change single item's album
+  const handleChangeItemAlbum = (itemId: string, albId: string, albName: string) => {
+    setDetectedItems((prev) =>
+      prev.map((item) =>
+        item.id === itemId
+          ? { ...item, targetAlbumId: albId, targetAlbumName: albName }
+          : item
+      )
+    );
+  };
+
   const selectedItems = detectedItems.filter((i) => i.selected);
 
   // Execute the import: upload binaries permanently to /api/upload
@@ -180,6 +219,7 @@ export default function InstagramImportModal({
     setImportProgress(0);
 
     const importedMedia: MediaItem[] = [];
+    const newAlbumsMap = new Map<string, Album>();
     const total = selectedItems.length;
 
     for (let i = 0; i < total; i++) {
@@ -206,20 +246,34 @@ export default function InstagramImportModal({
           ? new Date(item.timestamp).toISOString().split('T')[0]
           : new Date().toISOString().split('T')[0];
 
+        // Track album if it's new
+        const targetId = item.targetAlbumId;
+        const targetName = item.targetAlbumName;
+        const isExisting = availableAlbums.some((a) => a.id === targetId);
+        if (!isExisting && !newAlbumsMap.has(targetId)) {
+          newAlbumsMap.set(targetId, {
+            id: targetId,
+            name: targetName,
+            description: `Imported from Instagram Archive (${item.targetAlbumName})`,
+            coverUrl: finalUrl,
+            itemCount: 0,
+          });
+        }
+
         importedMedia.push({
           id: `ig-mem-${Date.now()}-${i}`,
           type: item.type,
           url: finalUrl,
           thumbnailUrl: finalUrl,
           title: item.name.replace(/\.[^/.]+$/, '').replace(/_/g, ' ') || 'Instagram Story',
-          album: albumName.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+          album: targetId,
           takenAt: dateStr || '2024-10-31',
           durationSeconds: item.type === 'video' ? 15 : 7,
           isFavorite: false,
           audioTrack: item.songTitle ? {
             title: item.songTitle,
             artist: item.artistName || 'Instagram Audio',
-            url: finalUrl, // audio is baked into the video
+            url: finalUrl,
             startOffsetSeconds: 0,
             source: 'library',
           } : undefined,
@@ -235,16 +289,7 @@ export default function InstagramImportModal({
       setImportProgress(Math.round(((i + 1) / total) * 100));
     }
 
-    // Create target album
-    const newAlbum: Album = {
-      id: albumName.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-      name: albumName,
-      description: `Official Instagram Archive (${importedMedia.length} memories)`,
-      coverUrl: importedMedia[0]?.url || 'https://images.unsplash.com/photo-1514565131-fce0801e5785?auto=format&fit=crop&w=800&q=80',
-      itemCount: importedMedia.length,
-    };
-
-    onImportComplete(importedMedia, newAlbum);
+    onImportComplete(importedMedia, Array.from(newAlbumsMap.values()));
     setStep('done');
 
     try {
@@ -258,7 +303,7 @@ export default function InstagramImportModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-[2px] font-mono text-xs select-none">
-      <div className="relative w-full max-w-2xl retro-box-outset shadow-2xl flex flex-col overflow-hidden max-h-[92vh]">
+      <div className="relative w-full max-w-2xl retro-box-outset shadow-2xl flex flex-col overflow-hidden max-h-[94vh]">
         
         {/* Title Bar */}
         <div className="retro-titlebar select-none">
@@ -273,7 +318,7 @@ export default function InstagramImportModal({
         <div className="px-4 py-2.5 bg-gradient-to-r from-[#dfdbed] to-[#edeaf7] border-b border-[#a09bb8] flex items-center justify-between">
           <div>
             <h3 className="font-bold text-xs text-[#1a162b]">Instagram Archive Importer</h3>
-            <p className="text-[10px] text-neutral-600">Import stories with filters, text, and dates legally</p>
+            <p className="text-[10px] text-neutral-600">Select stories and assign into any album of your choice</p>
           </div>
           <div className="px-2 py-0.5 retro-box-outset bg-emerald-100 text-emerald-800 text-[9px] font-bold flex items-center gap-1">
             <ShieldCheck className="w-3 h-3 text-emerald-700" />
@@ -282,7 +327,7 @@ export default function InstagramImportModal({
         </div>
 
         {/* Wizard Body */}
-        <div className="p-4 bg-[#f4f2fa] retro-box-inset m-1 overflow-y-auto space-y-4 max-h-[70vh]">
+        <div className="p-4 bg-[#f4f2fa] retro-box-inset m-1 overflow-y-auto space-y-3 max-h-[72vh]">
           
           {/* STEP 1: INTRO & DROP ZONE */}
           {step === 'intro' && (
@@ -345,31 +390,82 @@ export default function InstagramImportModal({
             </div>
           )}
 
-          {/* STEP 3: PREVIEW DETECTED STORIES & FILTER/REMOVE BEFORE IMPORT */}
+          {/* STEP 3: PREVIEW DETECTED STORIES & ASSIGN TO ALBUMS */}
           {step === 'preview' && (
             <div className="space-y-3">
-              {/* Info & Stats Banner */}
-              <div className="retro-box-outset p-2.5 bg-[#dfdbed] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <h4 className="font-bold text-xs text-[#1a162b] flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-[#5a4897]" />
-                    Archive Contents ({detectedItems.length} Total Found)
-                  </h4>
-                  <p className="text-[10px] text-neutral-600">
-                    Uncheck or click <span className="text-rose-600 font-bold">✕</span> to remove any stories you don&apos;t want before uploading.
-                  </p>
-                </div>
-                <div className="flex items-center gap-1.5 self-end sm:self-auto">
-                  <span className="px-2 py-0.5 retro-box-inset bg-white text-[10px] font-bold text-[#5a4897]">
+              {/* Destination Album Picker Bar */}
+              <div className="p-2.5 retro-box-outset bg-[#e5e1f3] space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-[#1a162b]">
+                    <FolderPlus className="w-4 h-4 text-[#5a4897]" />
+                    <span>Destination Album for Selected Stories:</span>
+                  </div>
+                  <span className="px-2 py-0.5 retro-box-inset bg-white text-[10px] font-bold text-[#5a4897] self-start sm:self-auto">
                     {selectedItems.length} of {detectedItems.length} Selected
                   </span>
                 </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  {/* Select existing or new */}
+                  <select
+                    value={albumChoice}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setAlbumChoice(val);
+                      if (val !== '__new__') {
+                        const alb = availableAlbums.find((a) => a.id === val);
+                        if (alb) handleApplyAlbumToSelected(alb.id, alb.name);
+                      } else {
+                        handleApplyAlbumToSelected(
+                          customAlbumName.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+                          customAlbumName.trim() || 'Instagram Archive'
+                        );
+                      }
+                    }}
+                    className="retro-box-inset px-2 py-1 text-xs text-black bg-white flex-1"
+                  >
+                    <option value="__new__">➕ [Create New Album...]</option>
+                    {availableAlbums.map((alb) => (
+                      <option key={alb.id} value={alb.id}>
+                        📁 {alb.name} ({alb.itemCount} items)
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* If new, input name */}
+                  {albumChoice === '__new__' && (
+                    <div className="flex items-center gap-1 flex-1">
+                      <input
+                        type="text"
+                        placeholder="Type New Album Name (e.g. Summer 2024)"
+                        value={customAlbumName}
+                        onChange={(e) => {
+                          setCustomAlbumName(e.target.value);
+                          handleApplyAlbumToSelected(
+                            e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+                            e.target.value.trim() || 'New Album'
+                          );
+                        }}
+                        className="retro-box-inset px-2 py-1 text-xs text-black bg-white flex-1"
+                      />
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => handleApplyAlbumToSelected(currentAlbumId, currentAlbumName)}
+                    className="retro-btn text-[10px] font-bold whitespace-nowrap bg-[#cec8e3]"
+                    title="Apply this album to all currently checked stories"
+                  >
+                    Apply to Selected
+                  </button>
+                </div>
               </div>
 
-              {/* Controls bar: Select All / Deselect / Album Name */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 retro-box-outset bg-[#edeaf7]">
+              {/* Quick Select & Filter Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-1.5 p-2 retro-box-outset bg-[#dfdbed]">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] font-bold text-neutral-700">Quick Select:</span>
+                  <span className="text-[10px] font-bold text-neutral-700">Quick Selection:</span>
                   <button
                     type="button"
                     onClick={() => handleSelectAll(true)}
@@ -389,32 +485,25 @@ export default function InstagramImportModal({
                       type="button"
                       onClick={handleRemoveDeselected}
                       className="px-2 py-0.5 retro-btn text-[10px] text-rose-700 font-bold"
-                      title="Permanently remove deselected items from this list"
                     >
                       Delete Unchecked
                     </button>
                   )}
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold text-neutral-700 whitespace-nowrap">Album:</span>
-                  <input
-                    type="text"
-                    value={albumName}
-                    onChange={(e) => setAlbumName(e.target.value)}
-                    className="retro-box-inset px-2 py-0.5 text-[11px] text-black w-40"
-                  />
-                </div>
+                <p className="text-[10px] text-neutral-500 italic">
+                  Tip: Select stories → pick an album above to organize them!
+                </p>
               </div>
 
-              {/* Grid Preview with Checkbox & Instant Delete Button */}
+              {/* Grid Preview */}
               {detectedItems.length === 0 ? (
                 <div className="retro-box-inset p-8 bg-white text-center space-y-2">
                   <p className="font-bold text-neutral-600">All items removed!</p>
                   <p className="text-[10px] text-neutral-400">Click &quot;&lt; Back&quot; to pick or drop another archive.</p>
                 </div>
               ) : (
-                <div className="retro-box-inset p-2 bg-white max-h-64 overflow-y-auto grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
+                <div className="retro-box-inset p-2 bg-white max-h-60 overflow-y-auto grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
                   {detectedItems.map((item) => (
                     <div 
                       key={item.id} 
@@ -477,16 +566,21 @@ export default function InstagramImportModal({
                         </span>
                       </div>
 
-                      {/* Bottom Media Badge */}
-                      <div className="absolute bottom-1 inset-x-1 flex items-center justify-between pointer-events-none">
-                        <span className="px-1 py-0.2 bg-black/85 text-white text-[8px] font-mono rounded-sm">
-                          {item.type === 'video' ? 'VID' : 'PIC'}
-                        </span>
-                        {item.songTitle && (
-                          <span className="px-1 py-0.2 bg-[#5a4897] text-white text-[7px] font-mono rounded-sm truncate max-w-[65px]">
-                            ♫ {item.songTitle}
+                      {/* Bottom Target Album Badge */}
+                      <div className="absolute bottom-1 inset-x-1 flex flex-col gap-0.5 pointer-events-none">
+                        <div className="flex items-center justify-between">
+                          <span className="px-1 py-0.2 bg-black/85 text-white text-[8px] font-mono rounded-sm">
+                            {item.type === 'video' ? 'VID' : 'PIC'}
                           </span>
-                        )}
+                          {item.songTitle && (
+                            <span className="px-1 py-0.2 bg-[#5a4897] text-white text-[7px] font-mono rounded-sm truncate max-w-[65px]">
+                              ♫ {item.songTitle}
+                            </span>
+                          )}
+                        </div>
+                        <span className="px-1 py-0.5 bg-[#433575]/90 text-white text-[8px] font-mono rounded-sm truncate">
+                          📁 {item.targetAlbumName}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -499,7 +593,7 @@ export default function InstagramImportModal({
           {step === 'importing' && (
             <div className="py-12 space-y-4 text-center">
               <h4 className="font-bold text-xs text-neutral-800">
-                Archiving Stories to Vault Disk... ({importProgress}%)
+                Archiving Stories to Vault Disk & Albums... ({importProgress}%)
               </h4>
               <div className="w-full h-4 retro-box-inset bg-neutral-200 overflow-hidden p-0.5">
                 <div
@@ -508,7 +602,7 @@ export default function InstagramImportModal({
                 />
               </div>
               <p className="text-[10px] text-neutral-500 font-mono">
-                Saving permanent copies to /uploads/ with original dates, filters & audio tags.
+                Saving permanent copies to disk and organizing into your selected albums.
               </p>
             </div>
           )}
@@ -521,7 +615,7 @@ export default function InstagramImportModal({
               </div>
               <h3 className="font-bold text-sm text-[#1a162b]">Import Successfully Completed!</h3>
               <p className="text-xs text-neutral-600 max-w-sm mx-auto">
-                All {selectedItems.length} memories have been permanently imported into your private lifetime vault with your original filters, text overlays, and dates.
+                All {selectedItems.length} memories have been permanently stored and categorized into your chosen albums.
               </p>
             </div>
           )}
@@ -530,7 +624,7 @@ export default function InstagramImportModal({
         {/* Wizard Footer Controls */}
         <div className="px-4 py-2 bg-[#dfdbed] border-t border-white flex items-center justify-between">
           <span className="text-[10px] text-neutral-600 font-bold">
-            {step === 'done' ? 'Status: 100% Synchronized' : 'Encrypted Local Processing'}
+            {step === 'done' ? 'Status: Synchronized' : 'Encrypted Local Processing'}
           </span>
           <div className="flex items-center gap-2">
             {step === 'intro' && (
@@ -549,7 +643,7 @@ export default function InstagramImportModal({
                       : 'opacity-50 cursor-not-allowed text-neutral-500'
                   }`}
                 >
-                  Import {selectedItems.length} Stories →
+                  Import {selectedItems.length} Stories into Album(s) →
                 </button>
               </>
             )}
@@ -577,11 +671,11 @@ export default function InstagramImportModal({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="retro-titlebar">
-              <span className="truncate">Preview: {enlargedItem.name}</span>
+              <span className="truncate">Inspect: {enlargedItem.name}</span>
               <button onClick={() => setEnlargedItem(null)} className="retro-win-ctrl">✕</button>
             </div>
 
-            <div className="relative aspect-[9/16] max-h-[60vh] bg-black retro-box-inset flex items-center justify-center overflow-hidden mx-auto">
+            <div className="relative aspect-[9/16] max-h-[58vh] bg-black retro-box-inset flex items-center justify-center overflow-hidden mx-auto">
               {enlargedItem.type === 'video' ? (
                 <video
                   src={enlargedItem.previewUrl}
@@ -599,6 +693,32 @@ export default function InstagramImportModal({
               )}
             </div>
 
+            {/* Individual Album Assignment */}
+            <div className="retro-box-inset p-2 bg-white space-y-1">
+              <label className="block text-[10px] font-bold text-neutral-700">Assign this story to Album:</label>
+              <select
+                value={enlargedItem.targetAlbumId}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const alb = availableAlbums.find((a) => a.id === val);
+                  if (alb) {
+                    handleChangeItemAlbum(enlargedItem.id, alb.id, alb.name);
+                    setEnlargedItem((prev) => prev ? { ...prev, targetAlbumId: alb.id, targetAlbumName: alb.name } : null);
+                  }
+                }}
+                className="w-full retro-box-inset px-2 py-1 text-xs text-black bg-white"
+              >
+                <option value={enlargedItem.targetAlbumId}>📁 {enlargedItem.targetAlbumName} (Current)</option>
+                {availableAlbums
+                  .filter((a) => a.id !== enlargedItem.targetAlbumId)
+                  .map((alb) => (
+                    <option key={alb.id} value={alb.id}>
+                      📁 {alb.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
             <div className="flex items-center justify-between pt-1">
               <button
                 type="button"
@@ -608,7 +728,7 @@ export default function InstagramImportModal({
                 }}
                 className="retro-btn text-rose-700 font-bold flex items-center gap-1"
               >
-                <Trash2 className="w-3.5 h-3.5" /> Remove from Import
+                <Trash2 className="w-3.5 h-3.5" /> Remove
               </button>
 
               <button
@@ -627,7 +747,7 @@ export default function InstagramImportModal({
                 onClick={() => setEnlargedItem(null)}
                 className="retro-btn"
               >
-                Close
+                Done
               </button>
             </div>
           </div>
