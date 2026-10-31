@@ -1,8 +1,0 @@
-{
-  "/_not-found/page": "/_not-found",
-  "/_global-error/page": "/_global-error",
-  "/api/media/[filename]/route": "/api/media/[filename]",
-  "/api/music/search/route": "/api/music/search",
-  "/api/upload/route": "/api/upload",
-  "/page": "/"
-}

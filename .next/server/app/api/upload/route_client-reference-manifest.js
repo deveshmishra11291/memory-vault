@@ -1,1 +1,0 @@
-globalThis.__RSC_MANIFEST=(globalThis.__RSC_MANIFEST||{});globalThis.__RSC_MANIFEST["/api/upload/route"]={"moduleLoading":{"prefix":"/_next/"},"ssrModuleMapping":{},"edgeSSRModuleMapping":{},"clientModules":{},"entryCSSFiles":{"/Users/deveshprakashmishra/.gemini/antigravity/scratch/memory-vault/src/app/api/upload/route":[]},"rscModuleMapping":{},"edgeRscModuleMapping":{}};

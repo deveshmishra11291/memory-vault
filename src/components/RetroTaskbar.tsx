@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Lock, Volume2, VolumeX, Folder, Plus, Music, 
-  FileText, Download, ShieldCheck, Sparkles, Monitor
+  FileText, Download, ShieldCheck, Sparkles, Monitor, Camera
 } from 'lucide-react';
 
 interface RetroTaskbarProps {
@@ -13,9 +13,10 @@ interface RetroTaskbarProps {
     upload: boolean;
     music: boolean;
     readme: boolean;
+    igImport?: boolean;
   };
   activeWindow: string;
-  onToggleWindow: (win: 'gallery' | 'story' | 'upload' | 'music' | 'readme') => void;
+  onToggleWindow: (win: 'gallery' | 'story' | 'upload' | 'music' | 'readme' | 'igImport') => void;
   onExportVault: () => void;
 }
 
@@ -101,6 +102,17 @@ export default function RetroTaskbar({
             >
               <Music className="w-4 h-4 text-rose-500" />
               <span>Music Catalog [Spotify]</span>
+            </button>
+
+            <button
+              onClick={() => {
+                onToggleWindow('igImport');
+                setStartMenuOpen(false);
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-[#5a4897] hover:text-white transition font-medium"
+            >
+              <Camera className="w-4 h-4 text-rose-500" />
+              <span>Import IG Archive (ZIP)...</span>
             </button>
 
             <div className="border-t border-[#807a99] border-b border-white my-1" />
@@ -224,6 +236,20 @@ export default function RetroTaskbar({
               >
                 <FileText className="w-3.5 h-3.5 text-neutral-600 flex-shrink-0" />
                 <span className="truncate">README.txt</span>
+              </button>
+            )}
+
+            {openWindows.igImport && (
+              <button
+                onClick={() => onToggleWindow('igImport')}
+                className={`h-7 px-3 max-w-[150px] truncate retro-btn text-[11px] flex items-center gap-1.5 ${
+                  activeWindow === 'igImport'
+                    ? 'border-t-[#332d47] border-l-[#332d47] border-b-white border-r-white bg-[#cec8e3]'
+                    : ''
+                }`}
+              >
+                <Camera className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
+                <span className="truncate">IG Importer</span>
               </button>
             )}
           </div>

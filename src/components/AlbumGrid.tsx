@@ -20,6 +20,7 @@ interface AlbumGridProps {
   onOpenNewAlbum: () => void;
   onOpenMusicSearch: () => void;
   onExportVault: () => void;
+  onOpenIgImport: () => void;
 }
 
 export default function AlbumGrid({
@@ -34,6 +35,7 @@ export default function AlbumGrid({
   onOpenNewAlbum,
   onOpenMusicSearch,
   onExportVault,
+  onOpenIgImport,
 }: AlbumGridProps) {
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
@@ -96,6 +98,15 @@ export default function AlbumGrid({
         >
           <Music className="w-3.5 h-3.5 text-rose-600" />
           <span>Music Catalog</span>
+        </button>
+
+        <button
+          onClick={onOpenIgImport}
+          className="retro-btn bg-[#f3edf8]"
+          title="Import Instagram Stories Archive (ZIP)"
+        >
+          <span className="text-rose-600 font-bold">IG</span>
+          <span>Import Archive</span>
         </button>
 
         {filteredItems.length > 0 && (

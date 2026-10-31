@@ -12,9 +12,10 @@ import NewAlbumModal from '@/components/NewAlbumModal';
 import MusicSearchModal from '@/components/MusicSearchModal';
 import ReadmeModal from '@/components/ReadmeModal';
 import RetroTaskbar from '@/components/RetroTaskbar';
+import InstagramImportModal from '@/components/InstagramImportModal';
 import { 
   Folder, Monitor, Plus, Music, FileText, Trash2, 
-  HardDrive, FolderPlus, Sparkles, Lock
+  HardDrive, FolderPlus, Sparkles, Lock, Camera
 } from 'lucide-react';
 
 export default function Home() {
@@ -29,6 +30,7 @@ export default function Home() {
     upload: false,
     music: false,
     readme: false,
+    igImport: false,
   });
   const [activeWindow, setActiveWindow] = useState<string>('gallery');
 
@@ -43,7 +45,7 @@ export default function Home() {
     setAlbums(loadedAlbums);
   }, []);
 
-  const handleToggleWindow = (win: 'gallery' | 'story' | 'upload' | 'music' | 'readme') => {
+  const handleToggleWindow = (win: 'gallery' | 'story' | 'upload' | 'music' | 'readme' | 'igImport') => {
     setOpenWindows((prev) => {
       const nextState = !prev[win];
       return { ...prev, [win]: nextState };
@@ -91,6 +93,19 @@ export default function Home() {
     const updated = [...albums, newAlbum];
     setAlbums(updated);
     saveAlbums(updated);
+    setSelectedAlbum(newAlbum.id);
+  };
+
+  const handleImportComplete = (importedItems: MediaItem[], newAlbum: Album) => {
+    const updatedMemories = [...importedItems, ...memories];
+    const updatedAlbums = [
+      ...albums.map((a) => (a.id === 'all' ? { ...a, itemCount: a.itemCount + importedItems.length } : a)),
+      newAlbum,
+    ];
+    setMemories(updatedMemories);
+    setAlbums(updatedAlbums);
+    saveMemories(updatedMemories);
+    saveAlbums(updatedAlbums);
     setSelectedAlbum(newAlbum.id);
   };
 
@@ -179,6 +194,19 @@ export default function Home() {
             </span>
           </div>
 
+          {/* Icon: Instagram Importer */}
+          <div
+            onClick={() => handleToggleWindow('igImport')}
+            className="flex flex-col items-center gap-1 p-2 rounded cursor-pointer group hover:bg-[#b0a8d6]/50 transition w-20 text-center"
+          >
+            <div className="w-10 h-10 retro-box-outset bg-[#dfdbed] flex items-center justify-center group-hover:scale-105 transition shadow-md">
+              <Camera className="w-6 h-6 text-rose-600" />
+            </div>
+            <span className="text-[10px] font-bold text-[#1a162b] leading-tight px-1 group-hover:bg-[#5a4897] group-hover:text-white rounded-sm">
+              IG_Import.exe
+            </span>
+          </div>
+
           {/* Icon: New Album */}
           <div
             onClick={() => setNewAlbumOpen(true)}
@@ -234,6 +262,7 @@ export default function Home() {
               onOpenNewAlbum={() => setNewAlbumOpen(true)}
               onOpenMusicSearch={() => handleToggleWindow('music')}
               onExportVault={handleExportVault}
+              onOpenIgImport={() => handleToggleWindow('igImport')}
             />
           )}
         </div>
@@ -272,6 +301,13 @@ export default function Home() {
           // Open upload modal with selected track
           setOpenWindows((prev) => ({ ...prev, upload: true, music: false }));
         }}
+      />
+
+      {/* Window: Instagram Archive Import Wizard */}
+      <InstagramImportModal
+        isOpen={openWindows.igImport}
+        onClose={() => setOpenWindows((prev) => ({ ...prev, igImport: false }))}
+        onImportComplete={handleImportComplete}
       />
 
       {/* Window: New Album Folder Dialog */}
