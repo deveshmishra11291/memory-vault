@@ -6,7 +6,7 @@ import {
   Play, Film, Music, Heart, MapPin, Calendar, 
   Trash2, Sparkles, Image as ImageIcon, Folder, ArrowLeft, ArrowRight,
   HardDrive, Plus, Search, Download, FolderPlus, CheckSquare, Square,
-  Copy, Layers, Check
+  Copy, Layers, Check, X
 } from 'lucide-react';
 import MoveToAlbumModal from '@/components/MoveToAlbumModal';
 
@@ -24,6 +24,8 @@ interface AlbumGridProps {
   onExportVault: () => void;
   onOpenIgImport: () => void;
   onMoveItemsToAlbum: (itemIds: string[], targetAlbumId: string, newAlbum?: Album, isMove?: boolean) => void;
+  onDeleteAlbum: (albumId: string) => void;
+  onClose: () => void;
 }
 
 export default function AlbumGrid({
@@ -40,8 +42,13 @@ export default function AlbumGrid({
   onExportVault,
   onOpenIgImport,
   onMoveItemsToAlbum,
+  onDeleteAlbum,
+  onClose,
 }: AlbumGridProps) {
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+
+  // Window State
+  const [isMaximized, setIsMaximized] = useState(false);
 
   // Checkbox Selection & Album Organize
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -98,32 +105,76 @@ export default function AlbumGrid({
   const allFilteredSelected = filteredItems.length > 0 && selectedIds.length === filteredItems.length;
 
   return (
-    <div className="retro-box-outset shadow-2xl overflow-hidden font-mono text-xs w-full mb-12">
+    <div className={`retro-box-outset shadow-2xl font-mono text-xs transition-all ${
+      isMaximized 
+        ? 'fixed inset-3 z-40 max-w-none mb-0 flex flex-col bg-[#dfdbed]' 
+        : 'w-full mb-12 flex flex-col'
+    }`}>
       
-      {/* 1. Retro Title Bar */}
-      <div className="retro-titlebar select-none">
-        <div className="flex items-center gap-2">
-          <Folder className="w-3.5 h-3.5 text-amber-300" />
-          <span>My Memories — [C:\Vault\{activeAlbumObj?.name.replace(/[^a-zA-Z0-9]/g, '_') || 'All'}]</span>
+      {/* 1. Retro Title Bar with Working Minimize, Maximize, and Exit Buttons */}
+      <div className="retro-titlebar select-none flex-shrink-0">
+        <div className="flex items-center gap-2 truncate">
+          <Folder className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
+          <span className="truncate">
+            My Memories — [C:\Vault\{activeAlbumObj?.name.replace(/[^a-zA-Z0-9]/g, '_') || 'All'}]
+          </span>
         </div>
-        <div className="flex items-center gap-1">
-          <button className="retro-win-ctrl">_</button>
-          <button className="retro-win-ctrl">□</button>
-          <button className="retro-win-ctrl">✕</button>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {/* Minimize button: hides window to taskbar */}
+          <button 
+            type="button" 
+            onClick={onClose} 
+            className="retro-win-ctrl font-bold" 
+            title="Minimize window"
+          >
+            _
+          </button>
+          {/* Maximize button: expands window full screen */}
+          <button 
+            type="button" 
+            onClick={() => setIsMaximized(!isMaximized)} 
+            className="retro-win-ctrl font-bold" 
+            title={isMaximized ? "Restore window size" : "Maximize window full screen"}
+          >
+            {isMaximized ? '❐' : '□'}
+          </button>
+          {/* Exit / Close button: closes window */}
+          <button 
+            type="button" 
+            onClick={onClose} 
+            className="retro-win-ctrl font-bold" 
+            title="Close window"
+          >
+            ✕
+          </button>
         </div>
       </div>
 
       {/* 2. Menu Bar */}
-      <div className="px-2 py-1 bg-[#dfdbed] border-b border-[#a09bb8] flex gap-3 text-[11px] text-[#2d2642] select-none">
-        <span className="hover:bg-[#5a4897] hover:text-white px-1 cursor-pointer">File</span>
-        <span className="hover:bg-[#5a4897] hover:text-white px-1 cursor-pointer">Edit</span>
-        <span className="hover:bg-[#5a4897] hover:text-white px-1 cursor-pointer">View</span>
-        <span className="hover:bg-[#5a4897] hover:text-white px-1 cursor-pointer">Favorites</span>
-        <span className="hover:bg-[#5a4897] hover:text-white px-1 cursor-pointer">Help</span>
+      <div className="px-2 py-1 bg-[#dfdbed] border-b border-[#a09bb8] flex items-center justify-between text-[11px] text-[#2d2642] select-none flex-shrink-0">
+        <div className="flex gap-3">
+          <span className="hover:bg-[#5a4897] hover:text-white px-1 cursor-pointer">File</span>
+          <span className="hover:bg-[#5a4897] hover:text-white px-1 cursor-pointer">Edit</span>
+          <span className="hover:bg-[#5a4897] hover:text-white px-1 cursor-pointer">View</span>
+          <span className="hover:bg-[#5a4897] hover:text-white px-1 cursor-pointer">Favorites</span>
+          <span className="hover:bg-[#5a4897] hover:text-white px-1 cursor-pointer">Help</span>
+        </div>
+
+        {/* Delete current album shortcut in menu bar */}
+        {selectedAlbum !== 'all' && (
+          <button
+            type="button"
+            onClick={() => onDeleteAlbum(selectedAlbum)}
+            className="text-rose-700 hover:bg-rose-100 hover:underline px-1 flex items-center gap-1 font-bold text-[10px]"
+          >
+            <Trash2 className="w-3 h-3 text-rose-600" />
+            <span>Delete Current Album</span>
+          </button>
+        )}
       </div>
 
       {/* 3. Retro Toolbar (Desktop 1999 Style) */}
-      <div className="px-2 py-1.5 bg-[#dfdbed] border-b border-[#a09bb8] flex flex-wrap items-center gap-2 select-none">
+      <div className="px-2 py-1.5 bg-[#dfdbed] border-b border-[#a09bb8] flex flex-wrap items-center gap-2 select-none flex-shrink-0">
         <button
           onClick={onOpenUpload}
           className="retro-btn"
@@ -167,6 +218,19 @@ export default function AlbumGrid({
           )}
         </label>
 
+        {/* Delete Album Toolbar Button (Visible whenever viewing a custom album) */}
+        {selectedAlbum !== 'all' && (
+          <button
+            type="button"
+            onClick={() => onDeleteAlbum(selectedAlbum)}
+            className="retro-btn text-rose-700 hover:bg-rose-100 font-bold flex items-center gap-1"
+            title={`Delete "${activeAlbumObj?.name}" album folder`}
+          >
+            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+            <span>Delete Album</span>
+          </button>
+        )}
+
         <button
           onClick={onOpenMusicSearch}
           className="retro-btn"
@@ -208,7 +272,7 @@ export default function AlbumGrid({
 
       {/* Success Notification Banner (Does not leave the album!) */}
       {successToast && (
-        <div className="px-4 py-2 bg-emerald-600 text-white font-bold text-xs flex items-center justify-between border-b border-emerald-800 animate-fadeIn select-none">
+        <div className="px-4 py-2 bg-emerald-600 text-white font-bold text-xs flex items-center justify-between border-b border-emerald-800 animate-fadeIn select-none flex-shrink-0">
           <span className="flex items-center gap-2">
             <Check className="w-4 h-4 text-emerald-200" />
             {successToast}
@@ -224,7 +288,7 @@ export default function AlbumGrid({
 
       {/* Multi-Select Floating Action Bar (Appears whenever items are checked) */}
       {selectedIds.length > 0 && (
-        <div className="px-3 py-2 bg-[#483a78] text-white border-b border-[#302554] flex flex-wrap items-center justify-between gap-2 select-none shadow-md">
+        <div className="px-3 py-2 bg-[#483a78] text-white border-b border-[#302554] flex flex-wrap items-center justify-between gap-2 select-none shadow-md flex-shrink-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-bold text-xs text-amber-300 flex items-center gap-1.5">
               <CheckSquare className="w-4 h-4" />
@@ -275,7 +339,7 @@ export default function AlbumGrid({
       )}
 
       {/* 4. Address Bar */}
-      <div className="px-2 py-1 bg-[#dfdbed] border-b border-[#a09bb8] flex items-center gap-2 text-[11px] select-none">
+      <div className="px-2 py-1 bg-[#dfdbed] border-b border-[#a09bb8] flex items-center gap-2 text-[11px] select-none flex-shrink-0">
         <span className="text-neutral-600 font-bold">Address:</span>
         <div className="flex-1 retro-box-inset px-2 py-0.5 bg-white text-black font-mono text-[11px] truncate flex items-center justify-between">
           <span>C:\MemoryVault\Albums\{activeAlbumObj?.name || 'All_Memories'}</span>
@@ -283,8 +347,8 @@ export default function AlbumGrid({
         </div>
       </div>
 
-      {/* 5. Highlight Folders (Story Circles — 1999 Edition) */}
-      <div className="p-3 bg-[#e8e5f2] border-b border-[#a09bb8] flex items-center gap-3 overflow-x-auto select-none">
+      {/* 5. Highlight Folders (Story Circles — 1999 Edition with Delete Option) */}
+      <div className="p-3 bg-[#e8e5f2] border-b border-[#a09bb8] flex items-center gap-3 overflow-x-auto select-none flex-shrink-0">
         {albums.map((album) => {
           const isSelected = selectedAlbum === album.id;
           return (
@@ -316,13 +380,30 @@ export default function AlbumGrid({
                   {album.itemCount} items
                 </span>
               </div>
+
+              {/* Delete Icon on Album Pill for Custom Albums */}
+              {album.id !== 'all' && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteAlbum(album.id);
+                  }}
+                  className="p-1 hover:bg-rose-200 rounded text-neutral-400 hover:text-rose-700 ml-1 transition"
+                  title={`Delete album "${album.name}"`}
+                >
+                  <Trash2 className="w-3 h-3 text-rose-600" />
+                </button>
+              )}
             </div>
           );
         })}
       </div>
 
       {/* 6. Media Cards Grid (Inside Retro Inset Viewport) */}
-      <div className="p-4 bg-[#f4f2fa] retro-box-inset m-1 min-h-[480px]">
+      <div className={`p-4 bg-[#f4f2fa] retro-box-inset m-1 ${
+        isMaximized ? 'flex-1 overflow-y-auto min-h-0' : 'min-h-[480px]'
+      }`}>
         {filteredItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center text-neutral-500 font-mono">
             <Sparkles className="w-8 h-8 text-neutral-400 mb-2" />
@@ -477,7 +558,7 @@ export default function AlbumGrid({
       </div>
 
       {/* 7. Bottom Status Bar */}
-      <div className="px-3 py-1 bg-[#dfdbed] text-[11px] text-neutral-700 flex justify-between select-none border-t border-[#ffffff]">
+      <div className="px-3 py-1 bg-[#dfdbed] text-[11px] text-neutral-700 flex justify-between select-none border-t border-[#ffffff] flex-shrink-0">
         <span>{filteredItems.length} object(s) in album • {selectedIds.length} selected</span>
         <span>Disk: 100% Private Encrypted Vault</span>
       </div>

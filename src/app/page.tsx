@@ -134,6 +134,31 @@ export default function Home() {
     setSelectedAlbum(newAlbum.id);
   };
 
+  const handleDeleteAlbum = (albumId: string) => {
+    if (albumId === 'all') {
+      alert('Cannot delete the root "All Memories" collection.');
+      return;
+    }
+
+    const target = albums.find((a) => a.id === albumId);
+    const albumName = target ? target.name : 'this album';
+
+    const confirmed = confirm(
+      `Are you sure you want to delete the album "${albumName}"?\n\nNote: All your photos, videos, and music will remain 100% safe in "All Memories" and your archive.`
+    );
+    if (!confirmed) return;
+
+    const updatedAlbums = albums.filter((a) => a.id !== albumId);
+
+    // If active album was deleted, switch back to 'all'
+    if (selectedAlbum === albumId) {
+      setSelectedAlbum('all');
+    }
+
+    setAlbums(updatedAlbums);
+    saveAlbums(updatedAlbums);
+  };
+
   const handleMoveItemsToAlbum = (
     itemIds: string[],
     targetAlbumId: string,
@@ -369,6 +394,8 @@ export default function Home() {
               onExportVault={handleExportVault}
               onOpenIgImport={() => handleToggleWindow('igImport')}
               onMoveItemsToAlbum={handleMoveItemsToAlbum}
+              onDeleteAlbum={handleDeleteAlbum}
+              onClose={() => setOpenWindows((prev) => ({ ...prev, gallery: false }))}
             />
           )}
         </div>
