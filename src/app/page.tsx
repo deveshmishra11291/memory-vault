@@ -181,7 +181,7 @@ export default function Home() {
     setAlbums(updatedAlbums);
     saveMemories(updatedMemories);
     saveAlbums(updatedAlbums);
-    setSelectedAlbum(finalAlbumId);
+    // Stay in current album (do not auto-switch albums after copying)
   };
 
   const handleImportComplete = (importedItems: MediaItem[], newAlbums?: Album[]) => {

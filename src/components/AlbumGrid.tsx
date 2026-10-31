@@ -6,7 +6,7 @@ import {
   Play, Film, Music, Heart, MapPin, Calendar, 
   Trash2, Sparkles, Image as ImageIcon, Folder, ArrowLeft, ArrowRight,
   HardDrive, Plus, Search, Download, FolderPlus, CheckSquare, Square,
-  Copy, Layers
+  Copy, Layers, Check
 } from 'lucide-react';
 import MoveToAlbumModal from '@/components/MoveToAlbumModal';
 
@@ -43,12 +43,11 @@ export default function AlbumGrid({
 }: AlbumGridProps) {
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
-  // Selection & Album Organize Mode
-  const [isSelectMode, setIsSelectMode] = useState(false);
+  // Checkbox Selection & Album Organize
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [targetMoveIds, setTargetMoveIds] = useState<string[]>([]);
+  const [successToast, setSuccessToast] = useState('');
 
   // Filter items by album
   const filteredItems = selectedAlbum === 'all'
@@ -66,21 +65,11 @@ export default function AlbumGrid({
     );
   };
 
-  const handleCardClick = (index: number, id: string, e: React.MouseEvent) => {
-    if (isSelectMode) {
-      if (e.shiftKey && lastSelectedIndex !== null) {
-        // Shift+Click range selection (Windows/Mac standard)
-        const start = Math.min(lastSelectedIndex, index);
-        const end = Math.max(lastSelectedIndex, index);
-        const rangeIds = filteredItems.slice(start, end + 1).map((i) => i.id);
-        setSelectedIds((prev) => Array.from(new Set([...prev, ...rangeIds])));
-      } else {
-        handleToggleSelectCard(id);
-      }
-      setLastSelectedIndex(index);
+  const handleSelectAll = (select: boolean) => {
+    if (select) {
+      setSelectedIds(filteredItems.map((i) => i.id));
     } else {
-      // Play the story starting at this index within the current album playlist
-      onOpenStory(index);
+      setSelectedIds([]);
     }
   };
 
@@ -93,12 +82,20 @@ export default function AlbumGrid({
   const handleConfirmMove = (itemIds: string[], targetAlbumId: string, newAlbum?: Album, isMove?: boolean) => {
     onMoveItemsToAlbum(itemIds, targetAlbumId, newAlbum, isMove);
     setSelectedIds([]);
-    setIsSelectMode(false);
+
+    const targetAlbumName = newAlbum?.name 
+      || albums.find((a) => a.id === targetAlbumId)?.name 
+      || 'Album';
+
+    setSuccessToast(`✓ ${itemIds.length} stor${itemIds.length === 1 ? 'y' : 'ies'} successfully ${isMove ? 'moved' : 'copied'} to "${targetAlbumName}"!`);
+    setTimeout(() => setSuccessToast(''), 4500);
   };
 
   // Find thumbnail for first item being moved
   const firstItemThumbnail = items.find((m) => m.id === targetMoveIds[0])?.thumbnailUrl 
     || items.find((m) => m.id === targetMoveIds[0])?.url;
+
+  const allFilteredSelected = filteredItems.length > 0 && selectedIds.length === filteredItems.length;
 
   return (
     <div className="retro-box-outset shadow-2xl overflow-hidden font-mono text-xs w-full mb-12">
@@ -145,26 +142,30 @@ export default function AlbumGrid({
           <span>New Album</span>
         </button>
 
-        {/* Multi-Select & Organize Stories */}
-        <button
-          onClick={() => {
-            const nextMode = !isSelectMode;
-            setIsSelectMode(nextMode);
-            if (!nextMode) setSelectedIds([]);
-          }}
-          className={`retro-btn ${
-            isSelectMode ? 'bg-[#5a4897] text-white font-bold border-t-[#2d2642] border-l-[#2d2642]' : 'bg-[#ede9f7]'
+        {/* Master Select All Checkbox Button */}
+        <label 
+          className={`retro-btn flex items-center gap-1.5 cursor-pointer transition ${
+            selectedIds.length > 0 ? 'bg-[#5a4897] text-white font-bold' : 'bg-[#ede9f7]'
           }`}
-          title="Multi-select stories to copy or add into albums"
+          title="Select all stories in this album"
         >
-          <CheckSquare className="w-3.5 h-3.5" />
-          <span>{isSelectMode ? 'Exit Multi-Select' : 'Multi-Select'}</span>
-          {selectedIds.length > 0 && (
-            <span className="ml-1 px-1 py-0.2 bg-amber-400 text-black text-[9px] rounded-sm font-bold">
+          <input
+            type="checkbox"
+            checked={allFilteredSelected}
+            onChange={(e) => handleSelectAll(e.target.checked)}
+            className="w-3.5 h-3.5 cursor-pointer accent-[#5a4897]"
+          />
+          <span>
+            {allFilteredSelected 
+              ? 'Deselect All' 
+              : `Select All (${filteredItems.length})`}
+          </span>
+          {selectedIds.length > 0 && !allFilteredSelected && (
+            <span className="ml-0.5 px-1 bg-amber-400 text-black text-[9px] rounded-sm font-bold">
               {selectedIds.length}
             </span>
           )}
-        </button>
+        </label>
 
         <button
           onClick={onOpenMusicSearch}
@@ -205,20 +206,34 @@ export default function AlbumGrid({
         </button>
       </div>
 
-      {/* Multi-Select Sticky Actions Bar */}
-      {isSelectMode && (
-        <div className="px-3 py-2 bg-[#d8d2ee] border-b border-[#a09bb8] flex flex-wrap items-center justify-between gap-2 select-none animate-fadeIn">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="font-bold text-xs text-[#1a162b] flex items-center gap-1.5 mr-1">
-              <Layers className="w-4 h-4 text-[#5a4897]" />
-              {selectedIds.length} of {filteredItems.length} Selected
+      {/* Success Notification Banner (Does not leave the album!) */}
+      {successToast && (
+        <div className="px-4 py-2 bg-emerald-600 text-white font-bold text-xs flex items-center justify-between border-b border-emerald-800 animate-fadeIn select-none">
+          <span className="flex items-center gap-2">
+            <Check className="w-4 h-4 text-emerald-200" />
+            {successToast}
+          </span>
+          <button
+            onClick={() => setSuccessToast('')}
+            className="text-white hover:text-emerald-200 text-xs font-bold px-1.5 py-0.5 retro-box-outset bg-emerald-700"
+          >
+            ✕ Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Multi-Select Floating Action Bar (Appears whenever items are checked) */}
+      {selectedIds.length > 0 && (
+        <div className="px-3 py-2 bg-[#483a78] text-white border-b border-[#302554] flex flex-wrap items-center justify-between gap-2 select-none shadow-md">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-bold text-xs text-amber-300 flex items-center gap-1.5">
+              <CheckSquare className="w-4 h-4" />
+              {selectedIds.length} of {filteredItems.length} Stories Selected
             </span>
 
-            {/* Quick multi-select buttons */}
             <button
               onClick={() => setSelectedIds(filteredItems.map((i) => i.id))}
-              className="retro-btn text-[10px] py-0.5 font-bold"
-              title="Select all stories in this album at once"
+              className="px-2 py-0.5 retro-btn text-[10px] text-black font-bold"
             >
               Select All ({filteredItems.length})
             </button>
@@ -226,46 +241,35 @@ export default function AlbumGrid({
             {videoItems.length > 0 && (
               <button
                 onClick={() => setSelectedIds(videoItems.map((i) => i.id))}
-                className="retro-btn text-[10px] py-0.5"
-                title="Select all videos in this album"
+                className="px-2 py-0.5 retro-btn text-[10px] text-black"
               >
-                Videos ({videoItems.length})
+                Videos Only ({videoItems.length})
               </button>
             )}
 
             {photoItems.length > 0 && (
               <button
                 onClick={() => setSelectedIds(photoItems.map((i) => i.id))}
-                className="retro-btn text-[10px] py-0.5"
-                title="Select all photos in this album"
+                className="px-2 py-0.5 retro-btn text-[10px] text-black"
               >
-                Photos ({photoItems.length})
+                Photos Only ({photoItems.length})
               </button>
             )}
 
             <button
               onClick={() => setSelectedIds([])}
-              className="retro-btn text-[10px] py-0.5"
+              className="px-2 py-0.5 retro-btn text-[10px] text-black"
             >
               Clear
             </button>
-            
-            <span className="text-[10px] text-neutral-500 italic hidden md:inline ml-1">
-              (Tip: Hold Shift to range-select multiple)
-            </span>
           </div>
 
           <button
             onClick={() => handleOpenMoveModal(selectedIds)}
-            disabled={selectedIds.length === 0}
-            className={`retro-btn font-bold flex items-center gap-1.5 ${
-              selectedIds.length > 0
-                ? 'bg-[#5a4897] text-white hover:bg-[#48397a]'
-                : 'opacity-50 cursor-not-allowed'
-            }`}
+            className="px-3 py-1 bg-amber-400 hover:bg-amber-300 text-black font-bold text-xs retro-box-outset flex items-center gap-1.5 shadow"
           >
-            <Copy className="w-3.5 h-3.5" />
-            <span>Copy &amp; Add to Album ({selectedIds.length})...</span>
+            <Copy className="w-3.5 h-3.5 text-black" />
+            <span>Copy {selectedIds.length} Stories to Album...</span>
           </button>
         </div>
       )}
@@ -336,30 +340,38 @@ export default function AlbumGrid({
               return (
                 <div
                   key={item.id}
-                  onClick={(e) => handleCardClick(index, item.id, e)}
-                  className={`retro-box-outset p-2 bg-[#dfdbed] cursor-pointer hover:bg-[#eae7f7] transition group flex flex-col justify-between relative ${
+                  className={`retro-box-outset p-2 bg-[#dfdbed] transition group flex flex-col justify-between relative ${
                     isSelected ? 'ring-2 ring-[#5a4897] bg-[#cec8e3]' : ''
                   }`}
                 >
-                  {/* Select Mode Checkbox Overlay */}
-                  {isSelectMode && (
-                    <div className="absolute top-2 left-2 z-20">
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleSelectCard(item.id);
-                        }}
-                        className={`w-5 h-5 rounded-sm retro-box-outset flex items-center justify-center font-bold text-xs shadow-md transition ${
-                          isSelected ? 'bg-emerald-600 text-white' : 'bg-white text-transparent'
-                        }`}
-                      >
-                        ✓
-                      </div>
-                    </div>
-                  )}
+                  {/* Real, Clickable Checkbox Badge on Every Card */}
+                  <div 
+                    className="absolute top-2 left-2 z-20 flex items-center"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <label 
+                      className={`flex items-center gap-1 cursor-pointer px-1.5 py-0.5 rounded shadow border text-[10px] font-bold select-none transition ${
+                        isSelected 
+                          ? 'bg-[#5a4897] text-white border-white' 
+                          : 'bg-white/90 text-neutral-800 border-black/40 hover:bg-white'
+                      }`}
+                      title={isSelected ? 'Deselect this story' : 'Select this story'}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleToggleSelectCard(item.id)}
+                        className="w-3.5 h-3.5 cursor-pointer accent-[#5a4897]"
+                      />
+                      <span>{isSelected ? '✓' : 'Select'}</span>
+                    </label>
+                  </div>
 
-                  {/* Media Viewport */}
-                  <div className="relative aspect-[4/3] retro-box-inset bg-black overflow-hidden mb-2">
+                  {/* Media Viewport (Click to Play this story in StoryViewer) */}
+                  <div 
+                    onClick={() => onOpenStory(index)}
+                    className="relative aspect-[4/3] retro-box-inset bg-black overflow-hidden mb-2 cursor-pointer"
+                  >
                     {failedImages[item.id] ? (
                       <div className="w-full h-full flex flex-col items-center justify-center bg-[#2d2642] p-4 text-center text-white">
                         <ImageIcon className="w-8 h-8 text-neutral-400 mb-1" />
@@ -387,7 +399,7 @@ export default function AlbumGrid({
                     )}
 
                     {/* Top Badges */}
-                    <div className={`absolute top-1.5 right-1.5 flex items-center gap-1 pointer-events-none ${isSelectMode ? 'left-8' : 'left-1.5'}`}>
+                    <div className="absolute top-1.5 right-1.5 flex items-center gap-1 pointer-events-none">
                       <span className="px-1.5 py-0.5 rounded-sm bg-black/75 text-white font-mono text-[9px] border border-white/20">
                         {item.type === 'video' ? '🎥 VIDEO' : '📸 PHOTO'}
                       </span>
@@ -400,20 +412,22 @@ export default function AlbumGrid({
                       )}
                     </div>
 
-                    {/* Hover Play Icon Overlay (when not in select mode) */}
-                    {!isSelectMode && (
-                      <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <div className="w-10 h-10 rounded-full bg-white/80 border border-black flex items-center justify-center text-black shadow-lg">
-                          <Play className="w-4 h-4 fill-black translate-x-0.5" />
-                        </div>
+                    {/* Hover Play Icon Overlay */}
+                    <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-white/80 border border-black flex items-center justify-center text-black shadow-lg">
+                        <Play className="w-4 h-4 fill-black translate-x-0.5" />
                       </div>
-                    )}
+                    </div>
                   </div>
 
                   {/* Card Metadata Details */}
                   <div className="space-y-1">
                     <div className="flex items-start justify-between gap-1">
-                      <h4 className="font-bold text-xs text-[#1a162b] truncate leading-tight">
+                      <h4 
+                        onClick={() => onOpenStory(index)}
+                        className="font-bold text-xs text-[#1a162b] truncate leading-tight cursor-pointer hover:underline"
+                        title={item.title}
+                      >
                         {item.title}
                       </h4>
                       
@@ -422,7 +436,7 @@ export default function AlbumGrid({
                         <button
                           onClick={() => handleOpenMoveModal([item.id])}
                           className="p-1 hover:bg-[#cec8e3] rounded text-[#5a4897]"
-                          title="Copy or add to another album"
+                          title="Copy to another album..."
                         >
                           <Copy className="w-3.5 h-3.5" />
                         </button>
@@ -464,7 +478,7 @@ export default function AlbumGrid({
 
       {/* 7. Bottom Status Bar */}
       <div className="px-3 py-1 bg-[#dfdbed] text-[11px] text-neutral-700 flex justify-between select-none border-t border-[#ffffff]">
-        <span>{filteredItems.length} object(s) in album</span>
+        <span>{filteredItems.length} object(s) in album • {selectedIds.length} selected</span>
         <span>Disk: 100% Private Encrypted Vault</span>
       </div>
 
