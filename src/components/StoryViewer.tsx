@@ -238,30 +238,55 @@ export default function StoryViewer({
           </div>
         </div>
 
-        {/* Story Progress Segmented Bars */}
-        <div className="flex gap-1 mb-2 px-0.5">
-          {items.map((item, idx) => {
-            let fillWidth = '0%';
-            if (idx < currentIndex) fillWidth = '100%';
-            else if (idx === currentIndex) fillWidth = `${progress}%`;
+        {/* Story Progress: Segmented bars for small albums, continuous unified retro bar for large archives */}
+        {items.length <= 15 ? (
+          <div className="flex gap-1 mb-2 px-0.5">
+            {items.map((item, idx) => {
+              let fillWidth = '0%';
+              if (idx < currentIndex) fillWidth = '100%';
+              else if (idx === currentIndex) fillWidth = `${progress}%`;
 
-            return (
-              <div
-                key={item.id}
-                className="h-1.5 flex-1 retro-box-inset bg-neutral-900 overflow-hidden cursor-pointer"
-                onClick={() => {
-                  setCurrentIndex(idx);
-                  setProgress(0);
-                }}
-              >
+              return (
                 <div
-                  className="h-full bg-gradient-to-r from-emerald-400 to-amber-300 transition-all duration-75"
-                  style={{ width: fillWidth }}
-                />
-              </div>
-            );
-          })}
-        </div>
+                  key={item.id}
+                  className="h-1.5 flex-1 retro-box-inset bg-neutral-900 overflow-hidden cursor-pointer"
+                  onClick={() => {
+                    setCurrentIndex(idx);
+                    setProgress(0);
+                  }}
+                  title={`Jump to Story ${idx + 1}`}
+                >
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-400 to-amber-300 transition-all duration-75"
+                    style={{ width: fillWidth }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="mb-2 px-0.5">
+            <div 
+              className="h-2 w-full retro-box-inset bg-neutral-900 overflow-hidden relative cursor-pointer"
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const pct = Math.max(0, Math.min(1, clickX / rect.width));
+                const targetIdx = Math.min(items.length - 1, Math.floor(pct * items.length));
+                setCurrentIndex(targetIdx);
+                setProgress(0);
+              }}
+              title="Click anywhere along progress bar to jump"
+            >
+              <div
+                className="h-full bg-gradient-to-r from-emerald-400 via-amber-300 to-rose-400 transition-all duration-75"
+                style={{ 
+                  width: `${Math.min(100, Math.max(0, ((currentIndex + progress / 100) / items.length) * 100))}%` 
+                }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* 2. Main Middle Deck: Left 3D Inset Video Art + Right Tactile Controls */}
         <div className="flex gap-3 items-stretch mb-2.5">

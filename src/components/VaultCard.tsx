@@ -56,14 +56,10 @@ export default function VaultCard({
     setIsHovered(false);
   };
 
-  const toggleVideoPlayback = (e: React.MouseEvent) => {
+  const handleOpenClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!videoRef.current) return;
-    if (isPlaying) {
-      videoRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
+    if (onOpenStory) {
+      onOpenStory();
     }
   };
 
@@ -77,20 +73,24 @@ export default function VaultCard({
 
   return (
     <div 
-      className={`card-perspective inline-block select-none max-w-full ${className}`}
+      className={`card-perspective inline-block select-none max-w-full w-full ${className}`}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={handleMouseLeave}
     >
       {/* Main Collectible Card Frame (Image 2 TCG Style - 100% Original Copyright-Safe) */}
       <div 
-        className={`${frameClass} relative w-full max-w-[320px] sm:max-w-[340px] mx-auto rounded-xl p-3 text-neutral-900 transition-transform duration-150 ease-out shadow-2xl ${
+        onClick={handleOpenClick}
+        className={`${frameClass} relative w-full max-w-[320px] sm:max-w-[340px] mx-auto rounded-xl p-3 text-neutral-900 transition-transform duration-150 ease-out shadow-2xl cursor-pointer ${
           isSelected ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-purple-900 scale-[1.02]' : ''
         }`}
         style={{
           transform: `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
           transformStyle: 'preserve-3d',
         }}
+        role="button"
+        tabIndex={0}
+        title="Tap or click to open story player"
       >
         {/* Holographic Sheen Layer on hover */}
         {isHovered && <div className="holo-overlay absolute inset-0 rounded-xl z-20 pointer-events-none" />}
@@ -119,8 +119,12 @@ export default function VaultCard({
           </div>
         )}
 
-        {/* 1. Top Card Title Banner */}
-        <div className="card-banner-inset px-2.5 py-1 rounded-sm flex items-center justify-between mb-2 select-none">
+        {/* 1. Top Card Title Banner (Clickable to open story) */}
+        <div 
+          onClick={handleOpenClick}
+          className="card-banner-inset px-2.5 py-1 rounded-sm flex items-center justify-between mb-2 cursor-pointer hover:opacity-90 transition select-none"
+          title="Click to Open Story in Player"
+        >
           <span className="font-serif font-black text-xs text-[#2b101f] tracking-wide truncate max-w-[190px]">
             {item.title}
           </span>
@@ -144,8 +148,12 @@ export default function VaultCard({
           </span>
         </div>
 
-        {/* 3. Center Media Frame ("Artwork" frame of the card) */}
-        <div className="relative aspect-[4/5] rounded-xs border-3 border-[#2b0e1e] bg-black overflow-hidden shadow-2xl mb-2 group">
+        {/* 3. Center Media Frame ("Artwork" frame of the card - TAP TO OPEN) */}
+        <div 
+          onClick={handleOpenClick}
+          className="relative aspect-[4/5] rounded-xs border-3 border-[#2b0e1e] bg-black overflow-hidden shadow-2xl mb-2 group cursor-pointer"
+          title="Tap / Click to Open in Stereo Player"
+        >
           {item.type === 'video' ? (
             <video
               ref={videoRef}
@@ -164,22 +172,15 @@ export default function VaultCard({
             />
           )}
 
-          {/* Video In-Place Play/Pause Button (Does NOT open the modal automatically) */}
-          {item.type === 'video' && (
-            <button
-              onClick={toggleVideoPlayback}
-              className="absolute inset-0 flex items-center justify-center bg-black/15 group-hover:bg-black/35 transition"
-              title={isPlaying ? "Pause Video Preview" : "Play Video Preview"}
-            >
-              <div className="w-11 h-11 rounded-full bg-white/90 border-2 border-black/50 flex items-center justify-center shadow-2xl transition transform group-hover:scale-110">
-                {isPlaying ? (
-                  <Pause className="w-4 h-4 fill-black text-black" />
-                ) : (
-                  <Play className="w-4 h-4 fill-black text-black translate-x-0.5" />
-                )}
-              </div>
-            </button>
-          )}
+          {/* In-Frame Play Button Overlay */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/15 group-hover:bg-black/40 transition">
+            <div className="w-12 h-12 rounded-full bg-white/90 border-2 border-black/50 flex items-center justify-center shadow-2xl transition transform group-hover:scale-110 mb-1">
+              <Play className="w-5 h-5 fill-black text-black translate-x-0.5" />
+            </div>
+            <span className="px-2 py-0.5 bg-black/80 text-white font-mono text-[9px] rounded-xs border border-white/20 opacity-0 group-hover:opacity-100 transition shadow">
+              Tap to Open Story
+            </span>
+          </div>
 
           {/* Top In-Frame Media Pill */}
           <div className="absolute top-2 left-2 z-10 flex items-center gap-1.5 pointer-events-none">
@@ -190,33 +191,18 @@ export default function VaultCard({
 
           {/* Bottom Audio Pill in Media Frame */}
           {item.audioTrack && (
-            <div className="absolute bottom-2 left-2 right-2 z-10 flex items-center justify-between">
+            <div className="absolute bottom-2 left-2 right-2 z-10 flex items-center justify-between pointer-events-none">
               <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-xs bg-black/85 text-white font-mono text-[9px] border border-white/20 truncate max-w-[80%]">
                 <Disc3 className="w-3 h-3 text-rose-400 animate-spin flex-shrink-0" />
                 <span className="truncate">{item.audioTrack.title} • {item.audioTrack.artist}</span>
               </div>
-
-              {item.type === 'video' && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsMuted(!isMuted);
-                  }}
-                  className="p-1 rounded bg-black/80 text-white hover:bg-black"
-                >
-                  {isMuted ? <VolumeX className="w-3 h-3 text-rose-400" /> : <Volume2 className="w-3 h-3" />}
-                </button>
-              )}
             </div>
           )}
 
-          {/* Explicit Expand to Stereo Player Icon in Top Right */}
+          {/* Expand to Stereo Player Icon in Top Right */}
           {onOpenStory && (
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenStory();
-              }}
+              onClick={handleOpenClick}
               className="absolute top-2 right-2 p-1.5 rounded-sm bg-black/75 text-white hover:bg-black border border-white/20 shadow z-20"
               title="Open in Stereo Player"
             >
@@ -259,17 +245,14 @@ export default function VaultCard({
             </div>
           )}
 
-          {/* Explicit Action Button: User must click this intentionally to open the stereo player */}
+          {/* Big, Clear "Open in Stereo Player" Primary Action Button */}
           {onOpenStory && (
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenStory();
-              }}
-              className="w-full py-1.5 px-3 bg-[#5a4897] hover:bg-[#453675] text-white font-bold text-xs rounded-xs shadow flex items-center justify-center gap-1.5 mb-2 transition transform active:scale-95"
+              onClick={handleOpenClick}
+              className="w-full py-2 px-3 bg-[#5a4897] hover:bg-[#453675] text-white font-bold text-xs rounded-xs shadow flex items-center justify-center gap-1.5 mb-2 transition transform active:scale-95 cursor-pointer"
             >
               <Play className="w-3.5 h-3.5 fill-white" />
-              <span>Open in Stereo Player</span>
+              <span>Tap to Open Story Player</span>
             </button>
           )}
 

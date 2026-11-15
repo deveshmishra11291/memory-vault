@@ -39,9 +39,21 @@ export default function Home() {
 
   // iPhone 16 Pro Viewport Simulator toggle
   const [isMobileSimulator, setIsMobileSimulator] = useState<boolean>(false);
+  const [isRealMobileDevice, setIsRealMobileDevice] = useState<boolean>(false);
 
   const [storyIndex, setStoryIndex] = useState(0);
   const [newAlbumOpen, setNewAlbumOpen] = useState(false);
+
+  // Auto-detect mobile devices (e.g. Android phone or iPhone) on load
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isMobile = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobile) {
+        setIsRealMobileDevice(true);
+        setIsMobileSimulator(true);
+      }
+    }
+  }, []);
 
   // Initialize data on client load
   useEffect(() => {
@@ -271,8 +283,8 @@ export default function Home() {
   return (
     <div className="min-h-screen retro-desktop-pattern flex flex-col justify-between font-mono pb-12 select-none relative overflow-x-hidden">
       
-      {/* Top Banner when in iPhone Simulator Mode */}
-      {isMobileSimulator && (
+      {/* Top Banner when in iPhone Simulator Mode on Desktop */}
+      {isMobileSimulator && !isRealMobileDevice && (
         <div className="bg-neutral-900 text-white px-4 py-2 flex items-center justify-between text-xs border-b border-neutral-700 shadow-lg z-30">
           <div className="flex items-center gap-2">
             <Smartphone className="w-4 h-4 text-emerald-400" />
@@ -284,10 +296,35 @@ export default function Home() {
               setIsMobileSimulator(false);
               setOpenWindows((prev) => ({ ...prev, story: false }));
             }}
-            className="px-2.5 py-1 bg-neutral-800 hover:bg-neutral-700 rounded text-neutral-200 text-xs font-bold transition flex items-center gap-1"
+            className="px-2.5 py-1 bg-neutral-800 hover:bg-neutral-700 rounded text-neutral-200 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
           >
             <span>Exit iPhone View</span>
             <ChevronLeft className="w-3.5 h-3.5 rotate-180" />
+          </button>
+        </div>
+      )}
+
+      {/* Top Desktop Switcher when in Windows 98 Mode */}
+      {!isMobileSimulator && !isRealMobileDevice && (
+        <div className="w-full bg-[#dfdbed] border-b border-[#a09bb8] px-4 py-1.5 flex items-center justify-between text-xs z-30">
+          <div className="flex items-center gap-2">
+            <span className="px-1.5 py-0.5 bg-[#5a4897] text-white font-bold text-[10px] rounded-xs">
+              Vault OS 1999
+            </span>
+            <span className="text-[11px] text-neutral-700 font-bold hidden sm:inline">
+              Your Private Lifetime Archive
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              setIsMobileSimulator(true);
+              setOpenWindows((prev) => ({ ...prev, story: false }));
+            }}
+            className="px-2.5 py-1 bg-gradient-to-r from-[#5a4897] to-[#423473] text-white text-[11px] font-bold rounded-xs shadow flex items-center gap-1.5 hover:opacity-95 transition cursor-pointer"
+            title="Preview native mobile layout in iPhone 16 Pro frame"
+          >
+            <Smartphone className="w-3.5 h-3.5 text-emerald-300" />
+            <span>📱 iOS App View</span>
           </button>
         </div>
       )}
@@ -418,27 +455,11 @@ export default function Home() {
           </div>
         )}
 
-        {/* Center: Main Windows Area (With iPhone Frame wrapper if isMobileSimulator is active) */}
+        {/* Center: Main Windows Area (With iPhone Frame wrapper if isMobileSimulator is active on Desktop) */}
         {isMobileSimulator ? (
-          <div className="relative w-full max-w-[420px] rounded-[52px] p-3.5 bg-neutral-900 border-[6px] border-neutral-700 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] flex flex-col z-20 my-2 overflow-hidden">
-            
-            {/* iOS Dynamic Island & Status Bar */}
-            <div className="w-full flex items-center justify-between px-6 pt-2 pb-1 text-white select-none z-30">
-              <span className="font-sans font-bold text-xs tracking-tight">9:41</span>
-              {/* Dynamic Island Pill */}
-              <div className="w-24 h-6 bg-black rounded-full flex items-center justify-between px-2.5 mx-auto shadow-inner">
-                <div className="w-2.5 h-2.5 rounded-full bg-neutral-900 border border-neutral-800" />
-                <div className="w-2 h-2 rounded-full bg-indigo-950" />
-              </div>
-              <div className="flex items-center gap-1 text-[10px]">
-                <Wifi className="w-3.5 h-3.5" />
-                <span className="font-bold text-[9px]">5G</span>
-                <Battery className="w-4 h-4 fill-white" />
-              </div>
-            </div>
-
-            {/* iPhone Inner Screen Viewport */}
-            <div className="w-full rounded-[40px] overflow-hidden bg-[#dfdbed] min-h-[750px] max-h-[82vh] overflow-y-auto overflow-x-hidden flex flex-col relative">
+          isRealMobileDevice ? (
+            /* 1. Real Mobile Phone Screen (Android / iPhone) - Native Edge-to-Edge */
+            <div className="w-full flex-1 flex flex-col bg-[#dfdbed] min-h-[92vh] z-20">
               {openWindows.gallery && (
                 <AlbumGrid
                   items={memories}
@@ -457,18 +478,63 @@ export default function Home() {
                   onDeleteAlbum={handleDeleteAlbum}
                   onClose={() => setOpenWindows((prev) => ({ ...prev, gallery: false }))}
                   onOpenShareExtension={() => handleToggleWindow('shareExtension')}
-                  isMobileSimulator={isMobileSimulator}
-                  onToggleMobileSimulator={() => {
-                    setIsMobileSimulator(false);
-                    setOpenWindows((prev) => ({ ...prev, story: false }));
-                  }}
+                  isMobileSimulator={true}
+                  onToggleMobileSimulator={() => {}}
                 />
               )}
             </div>
+          ) : (
+            /* 2. Desktop Laptop iPhone 16 Pro Simulator Mockup */
+            <div className="relative w-full max-w-[420px] rounded-[52px] p-3.5 bg-neutral-900 border-[6px] border-neutral-700 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] flex flex-col z-20 my-2 overflow-hidden">
+              
+              {/* iOS Dynamic Island & Status Bar */}
+              <div className="w-full flex items-center justify-between px-6 pt-2 pb-1 text-white select-none z-30">
+                <span className="font-sans font-bold text-xs tracking-tight">9:41</span>
+                {/* Dynamic Island Pill */}
+                <div className="w-24 h-6 bg-black rounded-full flex items-center justify-between px-2.5 mx-auto shadow-inner">
+                  <div className="w-2.5 h-2.5 rounded-full bg-neutral-900 border border-neutral-800" />
+                  <div className="w-2 h-2 rounded-full bg-indigo-950" />
+                </div>
+                <div className="flex items-center gap-1 text-[10px]">
+                  <Wifi className="w-3.5 h-3.5" />
+                  <span className="font-bold text-[9px]">5G</span>
+                  <Battery className="w-4 h-4 fill-white" />
+                </div>
+              </div>
 
-            {/* Bottom iOS Home Indicator Pill */}
-            <div className="w-32 h-1 bg-white/70 rounded-full mx-auto mt-2.5 mb-1" />
-          </div>
+              {/* iPhone Inner Screen Viewport */}
+              <div className="w-full rounded-[40px] overflow-hidden bg-[#dfdbed] min-h-[750px] max-h-[82vh] overflow-y-auto overflow-x-hidden flex flex-col relative">
+                {openWindows.gallery && (
+                  <AlbumGrid
+                    items={memories}
+                    albums={albums}
+                    selectedAlbum={selectedAlbum}
+                    onSelectAlbum={setSelectedAlbum}
+                    onOpenStory={handleOpenStory}
+                    onToggleFavorite={handleToggleFavorite}
+                    onDeleteItem={handleDeleteItem}
+                    onOpenUpload={() => handleToggleWindow('upload')}
+                    onOpenNewAlbum={() => setNewAlbumOpen(true)}
+                    onOpenMusicSearch={() => handleToggleWindow('music')}
+                    onExportVault={handleExportVault}
+                    onOpenIgImport={() => handleToggleWindow('igImport')}
+                    onMoveItemsToAlbum={handleMoveItemsToAlbum}
+                    onDeleteAlbum={handleDeleteAlbum}
+                    onClose={() => setOpenWindows((prev) => ({ ...prev, gallery: false }))}
+                    onOpenShareExtension={() => handleToggleWindow('shareExtension')}
+                    isMobileSimulator={true}
+                    onToggleMobileSimulator={() => {
+                      setIsMobileSimulator(false);
+                      setOpenWindows((prev) => ({ ...prev, story: false }));
+                    }}
+                  />
+                )}
+              </div>
+
+              {/* Bottom iOS Home Indicator Pill */}
+              <div className="w-32 h-1 bg-white/70 rounded-full mx-auto mt-2.5 mb-1" />
+            </div>
+          )
         ) : (
           <div className="flex-1 w-full max-w-5xl z-20">
             {openWindows.gallery && (

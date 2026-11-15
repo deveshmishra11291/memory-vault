@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MediaItem, Album } from '@/lib/types';
 import { 
   Play, Film, Music, Heart, MapPin, Calendar, 
@@ -54,11 +54,11 @@ export default function AlbumGrid({
   isMobileSimulator = false,
   onToggleMobileSimulator,
 }: AlbumGridProps) {
-  // View Mode: 'deck' (Card View - default in iPhone mode) vs 'classic' (Player Grid)
+  // View Mode: 'deck' (Card View - default) vs 'classic' (Player Grid)
   const [viewMode, setViewMode] = useState<'classic' | 'deck'>(isMobileSimulator ? 'deck' : 'deck');
 
   // Auto-switch to Card View when iPhone view is toggled
-  React.useEffect(() => {
+  useEffect(() => {
     if (isMobileSimulator) {
       setViewMode('deck');
     }
@@ -121,6 +121,186 @@ export default function AlbumGrid({
 
   const allFilteredSelected = filteredItems.length > 0 && selectedIds.length === filteredItems.length;
 
+  // -------------------------------------------------------------
+  // MOBILE / IPHONE SIMULATOR VIEW (Clean, Native, Zero Desktop Clutter)
+  // -------------------------------------------------------------
+  if (isMobileSimulator) {
+    return (
+      <div className="w-full flex-1 flex flex-col bg-[#ece8f6] font-mono text-xs select-none min-h-full">
+        {/* Clean iOS Top App Bar */}
+        <div className="px-3 py-2 bg-[#dfdbed] border-b border-[#bbb3d4] flex items-center justify-between shadow-xs flex-shrink-0">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="px-1.5 py-0.5 bg-[#5a4897] text-white font-bold text-[10px] rounded-xs shadow-xs">
+              Vault
+            </span>
+            <select 
+              value={selectedAlbum} 
+              onChange={(e) => onSelectAlbum(e.target.value)}
+              className="font-bold text-xs bg-transparent text-[#2b1f47] border-none focus:outline-hidden cursor-pointer truncate max-w-[130px]"
+            >
+              {albums.map((alb) => (
+                <option key={alb.id} value={alb.id}>
+                  {alb.name} ({alb.itemCount})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* iOS Style Segmented Control: Cards vs Player Grid */}
+            <div className="flex items-center retro-box-inset p-0.5 bg-[#d4cee6]">
+              <button
+                onClick={() => setViewMode('deck')}
+                className={`px-2 py-0.5 text-[10px] font-bold rounded-xs flex items-center gap-1 transition cursor-pointer ${
+                  viewMode === 'deck'
+                    ? 'bg-[#5a4897] text-white shadow-xs'
+                    : 'text-neutral-700 hover:text-black'
+                }`}
+                title="Collectible Trading Cards View"
+              >
+                <Layers className="w-3 h-3" />
+                <span>Cards</span>
+              </button>
+              <button
+                onClick={() => setViewMode('classic')}
+                className={`px-2 py-0.5 text-[10px] font-bold rounded-xs flex items-center gap-1 transition cursor-pointer ${
+                  viewMode === 'classic'
+                    ? 'bg-[#5a4897] text-white shadow-xs'
+                    : 'text-neutral-700 hover:text-black'
+                }`}
+                title="Retro Music Player Grid Feed"
+              >
+                <Grid className="w-3 h-3" />
+                <span>Grid</span>
+              </button>
+            </div>
+
+            {/* Delete Album option if viewing a custom album */}
+            {selectedAlbum !== 'all' && (
+              <button
+                onClick={() => onDeleteAlbum(selectedAlbum)}
+                className="p-1 retro-btn text-rose-700 hover:bg-rose-100"
+                title="Delete this album"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+              </button>
+            )}
+
+            {/* Solution A 1-Tap iOS Share Ingest */}
+            {onOpenShareExtension && (
+              <button
+                onClick={onOpenShareExtension}
+                className="p-1.5 retro-btn text-indigo-900 bg-gradient-to-r from-amber-200 to-amber-300 font-bold border-amber-600"
+                title="1-Tap iOS Share Sheet Ingest"
+              >
+                <Share2 className="w-3.5 h-3.5 text-indigo-900" />
+              </button>
+            )}
+
+            {/* Add Memory Button */}
+            <button
+              onClick={onOpenUpload}
+              className="px-2 py-1 retro-btn text-emerald-800 font-bold flex items-center gap-1"
+              title="Add Memory to Vault"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span className="text-[10px]">Add</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Clean Album Pills (Horizontal Scroll) */}
+        <div className="px-2.5 py-1.5 bg-[#e4e0f0] border-b border-[#ccc5e0] flex items-center gap-1.5 overflow-x-auto flex-shrink-0">
+          {albums.map((alb) => {
+            const isSel = selectedAlbum === alb.id;
+            return (
+              <button
+                key={alb.id}
+                onClick={() => onSelectAlbum(alb.id)}
+                className={`px-2.5 py-0.5 text-[10px] rounded-full flex items-center gap-1 flex-shrink-0 transition cursor-pointer ${
+                  isSel 
+                    ? 'bg-[#5a4897] text-white font-bold shadow-xs' 
+                    : 'bg-white/80 text-neutral-700 hover:bg-white'
+                }`}
+              >
+                <span>{alb.name}</span>
+                <span className="opacity-70 text-[8px]">({alb.itemCount})</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Mobile Main Body */}
+        <div className="flex-1 p-2.5 overflow-y-auto">
+          {filteredItems.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center text-neutral-500">
+              <Sparkles className="w-8 h-8 text-neutral-400 mb-2" />
+              <p className="font-bold text-xs text-neutral-700">This album is empty</p>
+              <p className="text-[10px] text-neutral-500 mt-1">Tap + Add above to save memories.</p>
+            </div>
+          ) : viewMode === 'deck' ? (
+            /* Card View: Exactly ONE Card at full width! Smooth slider with swipe & tap to open */
+            <div className="w-full flex flex-col items-center">
+              <VaultCardDeckSlider
+                items={filteredItems}
+                selectedIds={selectedIds}
+                onToggleSelect={handleToggleSelectCard}
+                onOpenStory={(idx) => onOpenStory(idx)}
+                onToggleFavorite={onToggleFavorite}
+                onCopyItem={(id) => handleOpenMoveModal([id])}
+                onDeleteItem={onDeleteItem}
+              />
+            </div>
+          ) : (
+            /* Player View: Strictly 1 column at full width! Matches Silk Sonic player feed */
+            <div className="flex flex-col items-center gap-4 py-2 w-full max-w-sm mx-auto">
+              {filteredItems.map((item, index) => (
+                <RetroPlayerCard
+                  key={item.id}
+                  item={item}
+                  isSelected={selectedIds.includes(item.id)}
+                  onToggleSelect={handleToggleSelectCard}
+                  onOpenStory={() => onOpenStory(index)}
+                  onToggleFavorite={onToggleFavorite}
+                  onCopyItem={(id) => handleOpenMoveModal([id])}
+                  onDeleteItem={onDeleteItem}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Bottom Quick Status */}
+        <div className="px-3 py-1 bg-[#dfdbed] border-t border-[#ccc5e0] flex items-center justify-between text-[10px] text-neutral-600 flex-shrink-0">
+          <span>{filteredItems.length} memories in {activeAlbumObj?.name || 'Vault'}</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onExportVault}
+              className="text-[#5a4897] hover:underline font-bold"
+            >
+              Backup Vault
+            </button>
+            <span>•</span>
+            <span className="font-bold">{viewMode === 'deck' ? 'Card Deck' : 'Player Feed'}</span>
+          </div>
+        </div>
+
+        {/* Copy / Move Modal */}
+        <MoveToAlbumModal
+          isOpen={moveModalOpen}
+          onClose={() => setMoveModalOpen(false)}
+          selectedItemIds={targetMoveIds}
+          albums={albums}
+          firstItemThumbnail={firstItemThumbnail}
+          onConfirm={handleConfirmMove}
+        />
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // DESKTOP 1999 WINDOWS RETRO EXPLORER VIEW
+  // -------------------------------------------------------------
   return (
     <div className={`retro-box-outset shadow-2xl font-mono text-xs transition-all w-full max-w-full overflow-x-hidden ${
       isMaximized 
@@ -513,7 +693,7 @@ export default function AlbumGrid({
                 onDeleteItem={onDeleteItem}
               />
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center py-2 max-w-full">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center py-2 max-w-full">
                 {filteredItems.map((item, index) => (
                   <VaultCard
                     key={item.id}
