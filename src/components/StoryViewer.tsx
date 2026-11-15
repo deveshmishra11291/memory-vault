@@ -211,7 +211,7 @@ export default function StoryViewer({
       <audio ref={audioRef} loop />
 
       {/* Main Retro Player Gadget (Exact Silk Sonic / Winamp Player Layout from user reference image) */}
-      <div className="winamp-deck-bg p-3 sm:p-4 rounded-sm shadow-[0_20px_50px_rgba(0,0,0,0.8)] border-2 border-[#b5accc] w-full max-w-lg flex flex-col select-none text-xs">
+      <div className="winamp-deck-bg p-2.5 sm:p-4 rounded-sm shadow-[0_20px_50px_rgba(0,0,0,0.8)] border-2 border-[#b5accc] w-full max-w-sm sm:max-w-lg flex flex-col select-none text-xs max-h-[92vh] overflow-y-auto overflow-x-hidden">
         
         {/* 1. Iconic Green Header matching Image ("Song" + STEREO indicator + Close ✕) */}
         <div className="winamp-header-green px-3 py-1 flex items-center justify-between mb-2 rounded-t-xs shadow-xs">
@@ -289,10 +289,10 @@ export default function StoryViewer({
         )}
 
         {/* 2. Main Middle Deck: Left 3D Inset Video Art + Right Tactile Controls */}
-        <div className="flex gap-3 items-stretch mb-2.5">
+        <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 items-center sm:items-stretch mb-2.5">
           
           {/* Left: 3D Inset Video / Photo Viewport matching Image 1 Frame */}
-          <div className="w-48 sm:w-56 aspect-[4/5] flex-shrink-0 retro-box-inset p-1 bg-[#1a1426] relative overflow-hidden group shadow-inner flex items-center justify-center">
+          <div className="w-full max-w-[270px] sm:w-56 aspect-[4/5] flex-shrink-0 retro-box-inset p-1 bg-[#1a1426] relative overflow-hidden group shadow-inner flex items-center justify-center mx-auto">
             {mediaErrors[currentItem.id] ? (
               <div className="w-full h-full flex flex-col items-center justify-center bg-[#2d2642] p-4 text-center text-white">
                 <Disc3 className="w-10 h-10 text-amber-400 animate-spin mb-2" />
@@ -303,9 +303,12 @@ export default function StoryViewer({
               <video
                 ref={videoRef}
                 src={currentItem.url}
+                poster={currentItem.thumbnailUrl || undefined}
+                preload="auto"
                 playsInline
                 loop
                 className="w-full h-full object-cover rounded-xs"
+                onError={() => setMediaErrors((prev) => ({ ...prev, [currentItem.id]: true }))}
               />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element

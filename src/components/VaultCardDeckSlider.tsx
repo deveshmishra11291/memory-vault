@@ -105,14 +105,14 @@ export default function VaultCardDeckSlider({
     <div className="w-full flex flex-col items-center select-none overflow-hidden py-1 font-mono">
       
       {/* 1. Header Bar: Compact Navigation Counter & Jump Scrubber */}
-      <div className="w-full max-w-sm flex items-center justify-between gap-2 px-2.5 py-1.5 bg-[#dfdbed] retro-box-outset text-xs mb-2 text-neutral-800 rounded-sm">
+      <div className="w-full max-w-[310px] flex items-center justify-between gap-1.5 px-2 py-1 bg-[#dfdbed] retro-box-outset text-xs mb-2 text-neutral-800 rounded-sm mx-auto">
         <span className="font-bold text-[#5a4897] flex items-center gap-1 text-[11px] flex-shrink-0">
-          <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-          Card {safeIndex + 1} of {items.length}
+          <Sparkles className="w-3 h-3 text-amber-600" />
+          Card {safeIndex + 1} / {items.length}
         </span>
 
         {/* Quick Scrubber / Slider */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 flex-shrink-0">
           <span className="text-[9px] text-neutral-500 font-mono">Jump:</span>
           <input
             type="range"
@@ -120,7 +120,7 @@ export default function VaultCardDeckSlider({
             max={items.length - 1}
             value={safeIndex}
             onChange={(e) => setCurrentIndex(parseInt(e.target.value, 10))}
-            className="w-20 sm:w-28 h-1.5 accent-[#5a4897] cursor-pointer"
+            className="w-16 sm:w-24 h-1.5 accent-[#5a4897] cursor-pointer"
           />
         </div>
       </div>
@@ -177,7 +177,7 @@ export default function VaultCardDeckSlider({
       </div>
 
       {/* 3. Tactile Slider Navigation Controls */}
-      <div className="w-full max-w-sm flex items-center justify-between gap-2 mt-3 px-1">
+      <div className="w-full max-w-[310px] mx-auto flex items-center justify-between gap-1.5 mt-3 px-1">
         {/* Previous Button */}
         <button
           onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}

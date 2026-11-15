@@ -281,7 +281,7 @@ export default function Home() {
     : memories.filter((m) => m.album === selectedAlbum);
 
   return (
-    <div className="min-h-screen retro-desktop-pattern flex flex-col justify-between font-mono pb-12 select-none relative overflow-x-hidden">
+    <div className={`min-h-screen retro-desktop-pattern flex flex-col justify-between font-mono ${isRealMobileDevice ? 'pb-0' : 'pb-12'} select-none relative overflow-x-hidden w-full max-w-full`}>
       
       {/* Top Banner when in iPhone Simulator Mode on Desktop */}
       {isMobileSimulator && !isRealMobileDevice && (
@@ -330,7 +330,7 @@ export default function Home() {
       )}
 
       {/* Desktop Workspace Canvas */}
-      <div className={`flex-1 p-4 sm:p-6 lg:p-8 flex ${isMobileSimulator ? 'justify-center items-center' : 'flex-col md:flex-row gap-6 items-start'}`}>
+      <div className={`flex-1 ${isRealMobileDevice ? 'p-0 w-full max-w-full' : 'p-4 sm:p-6 lg:p-8'} flex ${isMobileSimulator ? 'justify-center items-center' : 'flex-col md:flex-row gap-6 items-start'}`}>
         
         {/* Left Side: Desktop 1999 Pixel Icons Column (hidden if mobile simulator is centered) */}
         {!isMobileSimulator && (
@@ -459,7 +459,7 @@ export default function Home() {
         {isMobileSimulator ? (
           isRealMobileDevice ? (
             /* 1. Real Mobile Phone Screen (Android / iPhone) - Native Edge-to-Edge */
-            <div className="w-full flex-1 flex flex-col bg-[#dfdbed] min-h-[92vh] z-20">
+            <div className="w-full max-w-full flex-1 flex flex-col bg-[#dfdbed] min-h-screen z-20 overflow-x-hidden">
               {openWindows.gallery && (
                 <AlbumGrid
                   items={memories}

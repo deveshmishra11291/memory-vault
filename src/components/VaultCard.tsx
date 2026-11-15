@@ -35,6 +35,7 @@ export default function VaultCard({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
+  const [mediaError, setMediaError] = useState(false);
   const [rotateX, setRotateX] = useState(0);
   const [rotateY, setRotateY] = useState(0);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -80,7 +81,7 @@ export default function VaultCard({
     >
       {/* Main Collectible Card Frame (Image 2 TCG Style - 100% Original Copyright-Safe) */}
       <div 
-        className={`${frameClass} relative w-full max-w-[320px] sm:max-w-[340px] mx-auto rounded-xl p-3 text-neutral-900 transition-transform duration-150 ease-out shadow-2xl ${
+        className={`${frameClass} relative w-full max-w-[310px] sm:max-w-[340px] mx-auto rounded-xl p-2.5 sm:p-3 text-neutral-900 transition-transform duration-150 ease-out shadow-2xl ${
           isSelected ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-purple-900 scale-[1.02]' : ''
         }`}
         style={{
@@ -150,14 +151,17 @@ export default function VaultCard({
           className="relative aspect-[4/5] rounded-xs border-3 border-[#2b0e1e] bg-black overflow-hidden shadow-2xl mb-2 group cursor-pointer"
           title="Tap / Click to Open in Stereo Player"
         >
-          {item.type === 'video' ? (
+          {item.type === 'video' && !mediaError ? (
             <video
               ref={videoRef}
               src={item.url}
+              poster={item.thumbnailUrl || undefined}
+              preload="metadata"
               className="w-full h-full object-cover"
               loop
               playsInline
               muted={isMuted}
+              onError={() => setMediaError(true)}
             />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element

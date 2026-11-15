@@ -128,30 +128,58 @@ export default function AlbumGrid({
     return (
       <div className="w-full flex-1 flex flex-col bg-[#ece8f6] font-mono text-xs select-none min-h-full">
         {/* Clean iOS Top App Bar */}
-        <div className="px-3 py-2 bg-[#dfdbed] border-b border-[#bbb3d4] flex items-center justify-between shadow-xs flex-shrink-0">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="px-1.5 py-0.5 bg-[#5a4897] text-white font-bold text-[10px] rounded-xs shadow-xs">
-              Vault
-            </span>
-            <select 
-              value={selectedAlbum} 
-              onChange={(e) => onSelectAlbum(e.target.value)}
-              className="font-bold text-xs bg-transparent text-[#2b1f47] border-none focus:outline-hidden cursor-pointer truncate max-w-[130px]"
-            >
-              {albums.map((alb) => (
-                <option key={alb.id} value={alb.id}>
-                  {alb.name} ({alb.itemCount})
-                </option>
-              ))}
-            </select>
+        <div className="px-2.5 py-2 bg-[#dfdbed] border-b border-[#bbb3d4] flex flex-col gap-1.5 shadow-xs flex-shrink-0 w-full">
+          {/* Top Row: App Title & Album Dropdown + Quick Actions */}
+          <div className="flex items-center justify-between gap-1 w-full">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="px-1.5 py-0.5 bg-[#5a4897] text-white font-bold text-[10px] rounded-xs shadow-xs flex-shrink-0">
+                Vault
+              </span>
+              <select 
+                value={selectedAlbum} 
+                onChange={(e) => onSelectAlbum(e.target.value)}
+                className="font-bold text-xs bg-transparent text-[#2b1f47] border-none focus:outline-hidden cursor-pointer truncate max-w-[130px]"
+              >
+                {albums.map((alb) => (
+                  <option key={alb.id} value={alb.id}>
+                    {alb.name} ({alb.itemCount})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {/* Solution A 1-Tap iOS Share Ingest */}
+              {onOpenShareExtension && (
+                <button
+                  onClick={onOpenShareExtension}
+                  className="px-2 py-1 retro-btn text-indigo-900 bg-gradient-to-r from-amber-200 to-amber-300 font-bold border-amber-600 text-[10px] flex items-center gap-1"
+                  title="1-Tap iOS Share Sheet Ingest"
+                >
+                  <Share2 className="w-3 h-3 text-indigo-900" />
+                  <span>Share</span>
+                </button>
+              )}
+
+              {/* Add Memory Button */}
+              <button
+                onClick={onOpenUpload}
+                className="px-2 py-1 retro-btn text-emerald-800 font-bold flex items-center gap-1 text-[10px]"
+                title="Add Memory to Vault"
+              >
+                <Plus className="w-3 h-3" />
+                <span>Add</span>
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            {/* iOS Style Segmented Control: Cards vs Player Grid */}
+          {/* Second Row: View Switcher (Cards vs Grid) + Album Count / Delete */}
+          <div className="flex items-center justify-between gap-1 w-full pt-0.5">
+            {/* iOS Style Segmented Control */}
             <div className="flex items-center retro-box-inset p-0.5 bg-[#d4cee6]">
               <button
                 onClick={() => setViewMode('deck')}
-                className={`px-2 py-0.5 text-[10px] font-bold rounded-xs flex items-center gap-1 transition cursor-pointer ${
+                className={`px-2.5 py-0.5 text-[10px] font-bold rounded-xs flex items-center gap-1 transition cursor-pointer ${
                   viewMode === 'deck'
                     ? 'bg-[#5a4897] text-white shadow-xs'
                     : 'text-neutral-700 hover:text-black'
@@ -159,11 +187,11 @@ export default function AlbumGrid({
                 title="Collectible Trading Cards View"
               >
                 <Layers className="w-3 h-3" />
-                <span>Cards</span>
+                <span>Cards Deck</span>
               </button>
               <button
                 onClick={() => setViewMode('classic')}
-                className={`px-2 py-0.5 text-[10px] font-bold rounded-xs flex items-center gap-1 transition cursor-pointer ${
+                className={`px-2.5 py-0.5 text-[10px] font-bold rounded-xs flex items-center gap-1 transition cursor-pointer ${
                   viewMode === 'classic'
                     ? 'bg-[#5a4897] text-white shadow-xs'
                     : 'text-neutral-700 hover:text-black'
@@ -171,41 +199,24 @@ export default function AlbumGrid({
                 title="Retro Music Player Grid Feed"
               >
                 <Grid className="w-3 h-3" />
-                <span>Grid</span>
+                <span>Player Feed</span>
               </button>
             </div>
 
-            {/* Delete Album option if viewing a custom album */}
-            {selectedAlbum !== 'all' && (
-              <button
-                onClick={() => onDeleteAlbum(selectedAlbum)}
-                className="p-1 retro-btn text-rose-700 hover:bg-rose-100"
-                title="Delete this album"
-              >
-                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-              </button>
-            )}
-
-            {/* Solution A 1-Tap iOS Share Ingest */}
-            {onOpenShareExtension && (
-              <button
-                onClick={onOpenShareExtension}
-                className="p-1.5 retro-btn text-indigo-900 bg-gradient-to-r from-amber-200 to-amber-300 font-bold border-amber-600"
-                title="1-Tap iOS Share Sheet Ingest"
-              >
-                <Share2 className="w-3.5 h-3.5 text-indigo-900" />
-              </button>
-            )}
-
-            {/* Add Memory Button */}
-            <button
-              onClick={onOpenUpload}
-              className="px-2 py-1 retro-btn text-emerald-800 font-bold flex items-center gap-1"
-              title="Add Memory to Vault"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span className="text-[10px]">Add</span>
-            </button>
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-neutral-600 font-mono">
+                {filteredItems.length} items
+              </span>
+              {selectedAlbum !== 'all' && (
+                <button
+                  onClick={() => onDeleteAlbum(selectedAlbum)}
+                  className="p-1 retro-btn text-rose-700 hover:bg-rose-100 text-[10px] ml-1"
+                  title="Delete this album"
+                >
+                  <Trash2 className="w-3 h-3 text-rose-600" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
