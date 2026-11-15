@@ -149,3 +149,106 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #eae7f7;
 }
+
+/* =========================================================================
+   COLLECTIBLE MEMORY TRADING CARD (VAULTCARD™) & WINAMP SOUND DECK STYLES
+   ========================================================================= */
+
+/* Card Perspective Container */
+.card-perspective {
+  perspective: 1200px;
+}
+
+/* Card Rarity 1: Trap Card Magenta (Inspired by Image 2, 100% Original) */
+.card-frame-magenta {
+  background: radial-gradient(circle at 50% 30%, #bb4d86 0%, #8b2b5d 50%, #5c183d 100%);
+  border: 4px solid #360f23;
+  box-shadow: 
+    0 10px 25px -5px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 2px #d87aa9,
+    inset 0 0 10px rgba(0, 0, 0, 0.4);
+}
+
+/* Card Rarity 2: Gold Secret Rare */
+.card-frame-gold {
+  background: radial-gradient(circle at 50% 30%, #ffd978 0%, #d49e35 50%, #875c13 100%);
+  border: 4px solid #4a340b;
+  box-shadow: 
+    0 10px 25px -5px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 2px #ffe6a6,
+    inset 0 0 10px rgba(0, 0, 0, 0.4);
+}
+
+/* Card Rarity 3: Cyber Obsidian / Night */
+.card-frame-cyber {
+  background: radial-gradient(circle at 50% 30%, #2f344d 0%, #1a1c2e 50%, #0d0e17 100%);
+  border: 4px solid #05060a;
+  box-shadow: 
+    0 10px 25px -5px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 2px #5f6897,
+    inset 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Card Title Banner */
+.card-banner-inset {
+  background: linear-gradient(180deg, #f5edf3 0%, #dac1d4 100%);
+  border: 2px solid #3d1428;
+  box-shadow: inset 1px 1px 2px rgba(0,0,0,0.4);
+}
+
+/* Card Lore / Audio Description Box */
+.card-lore-box {
+  background: linear-gradient(180deg, #edd7e7 0%, #dfbfd6 100%);
+  border: 2px solid #451730;
+  box-shadow: inset 1px 1px 3px rgba(0,0,0,0.3);
+}
+
+/* Holographic Sheen Overlay */
+.holo-overlay {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 0, 128, 0.15) 45%,
+    rgba(0, 255, 255, 0.2) 55%,
+    rgba(255, 255, 255, 0.1) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  mix-blend-mode: color-dodge;
+  pointer-events: none;
+}
+
+/* Retro Sound Deck (Winamp / Silk Sonic Widget inspired by Image 1) */
+.winamp-deck-bg {
+  background-color: #d1cbdc;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #3a334d;
+  border-bottom: 2px solid #3a334d;
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.winamp-header-green {
+  background: linear-gradient(90deg, #1d6e3c 0%, #298d51 50%, #155b30 100%);
+  color: #ffffff;
+  font-family: monospace, sans-serif;
+  font-weight: 900;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-shadow: 1px 1px 0px #092c16;
+}
+
+/* Spinning Mini-Disc Animation */
+@keyframes spin-disc {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinning-disc {
+  animation: spin-disc 3s linear infinite;
+}
+
+.paused-disc {
+  animation-play-state: paused;
+}
+

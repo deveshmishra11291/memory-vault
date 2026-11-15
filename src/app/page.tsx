@@ -13,9 +13,11 @@ import MusicSearchModal from '@/components/MusicSearchModal';
 import ReadmeModal from '@/components/ReadmeModal';
 import RetroTaskbar from '@/components/RetroTaskbar';
 import InstagramImportModal from '@/components/InstagramImportModal';
+import ShareExtensionModal from '@/components/ShareExtensionModal';
 import { 
   Folder, Monitor, Plus, Music, FileText, Trash2, 
-  HardDrive, FolderPlus, Sparkles, Lock, Camera
+  HardDrive, FolderPlus, Sparkles, Lock, Camera, Share2, 
+  Smartphone, Wifi, Battery, ChevronLeft
 } from 'lucide-react';
 
 export default function Home() {
@@ -31,8 +33,12 @@ export default function Home() {
     music: false,
     readme: false,
     igImport: false,
+    shareExtension: false,
   });
   const [activeWindow, setActiveWindow] = useState<string>('gallery');
+
+  // iPhone 16 Pro Viewport Simulator toggle
+  const [isMobileSimulator, setIsMobileSimulator] = useState<boolean>(false);
 
   const [storyIndex, setStoryIndex] = useState(0);
   const [newAlbumOpen, setNewAlbumOpen] = useState(false);
@@ -79,7 +85,7 @@ export default function Home() {
     setAlbums(loadedAlbums);
   }, []);
 
-  const handleToggleWindow = (win: 'gallery' | 'story' | 'upload' | 'music' | 'readme' | 'igImport') => {
+  const handleToggleWindow = (win: 'gallery' | 'story' | 'upload' | 'music' | 'readme' | 'igImport' | 'shareExtension') => {
     setOpenWindows((prev) => {
       const nextState = !prev[win];
       return { ...prev, [win]: nextState };
@@ -206,7 +212,6 @@ export default function Home() {
     setAlbums(updatedAlbums);
     saveMemories(updatedMemories);
     saveAlbums(updatedAlbums);
-    // Stay in current album (do not auto-switch albums after copying)
   };
 
   const handleImportComplete = (importedItems: MediaItem[], newAlbums?: Album[]) => {
@@ -266,147 +271,242 @@ export default function Home() {
   return (
     <div className="min-h-screen retro-desktop-pattern flex flex-col justify-between font-mono pb-12 select-none relative overflow-x-hidden">
       
+      {/* Top Banner when in iPhone Simulator Mode */}
+      {isMobileSimulator && (
+        <div className="bg-neutral-900 text-white px-4 py-2 flex items-center justify-between text-xs border-b border-neutral-700 shadow-lg z-30">
+          <div className="flex items-center gap-2">
+            <Smartphone className="w-4 h-4 text-emerald-400" />
+            <span className="font-bold">iOS App Preview Mode (iPhone 16 Pro)</span>
+            <span className="text-[10px] text-neutral-400">• App Store Ready Native Touch Layout</span>
+          </div>
+          <button
+            onClick={() => setIsMobileSimulator(false)}
+            className="px-2.5 py-1 bg-neutral-800 hover:bg-neutral-700 rounded text-neutral-200 text-xs font-bold transition flex items-center gap-1"
+          >
+            <span>Exit iPhone View</span>
+            <ChevronLeft className="w-3.5 h-3.5 rotate-180" />
+          </button>
+        </div>
+      )}
+
       {/* Desktop Workspace Canvas */}
-      <div className="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col md:flex-row gap-6 items-start">
+      <div className={`flex-1 p-4 sm:p-6 lg:p-8 flex ${isMobileSimulator ? 'justify-center items-center' : 'flex-col md:flex-row gap-6 items-start'}`}>
         
-        {/* Left Side: Desktop 1999 Pixel Icons Column */}
-        <div className="flex flex-row md:flex-col gap-4 flex-wrap md:w-28 flex-shrink-0 z-10">
-          
-          {/* Icon: My Memories */}
-          <div
-            onClick={() => handleToggleWindow('gallery')}
-            className="flex flex-col items-center gap-1 p-2 rounded cursor-pointer group hover:bg-[#b0a8d6]/50 transition w-20 text-center"
-          >
-            <div className="w-10 h-10 retro-box-outset bg-[#dfdbed] flex items-center justify-center group-hover:scale-105 transition shadow-md">
-              <Folder className="w-6 h-6 text-amber-500 fill-amber-500/20" />
+        {/* Left Side: Desktop 1999 Pixel Icons Column (hidden if mobile simulator is centered) */}
+        {!isMobileSimulator && (
+          <div className="flex flex-row md:flex-col gap-4 flex-wrap md:w-28 flex-shrink-0 z-10">
+            
+            {/* Icon: iOS Share Sheet Ingest (Solution A) */}
+            <div
+              onClick={() => handleToggleWindow('shareExtension')}
+              className="flex flex-col items-center gap-1 p-2 rounded cursor-pointer group hover:bg-[#b0a8d6]/50 transition w-20 text-center"
+            >
+              <div className="w-10 h-10 retro-box-outset bg-gradient-to-tr from-amber-200 to-amber-300 flex items-center justify-center group-hover:scale-105 transition shadow-md border-amber-600">
+                <Share2 className="w-6 h-6 text-indigo-900" />
+              </div>
+              <span className="text-[10px] font-bold text-[#1a162b] leading-tight px-1 group-hover:bg-[#5a4897] group-hover:text-white rounded-sm">
+                iOS_Share.app
+              </span>
             </div>
-            <span className="text-[10px] font-bold text-[#1a162b] leading-tight px-1 group-hover:bg-[#5a4897] group-hover:text-white rounded-sm">
-              My Memories
-            </span>
-          </div>
 
-          {/* Icon: Story Player */}
-          <div
-            onClick={() => handleOpenStory(0)}
-            className="flex flex-col items-center gap-1 p-2 rounded cursor-pointer group hover:bg-[#b0a8d6]/50 transition w-20 text-center"
-          >
-            <div className="w-10 h-10 retro-box-outset bg-[#dfdbed] flex items-center justify-center group-hover:scale-105 transition shadow-md">
-              <Monitor className="w-6 h-6 text-rose-500" />
+            {/* Icon: My Memories */}
+            <div
+              onClick={() => handleToggleWindow('gallery')}
+              className="flex flex-col items-center gap-1 p-2 rounded cursor-pointer group hover:bg-[#b0a8d6]/50 transition w-20 text-center"
+            >
+              <div className="w-10 h-10 retro-box-outset bg-[#dfdbed] flex items-center justify-center group-hover:scale-105 transition shadow-md">
+                <Folder className="w-6 h-6 text-amber-500 fill-amber-500/20" />
+              </div>
+              <span className="text-[10px] font-bold text-[#1a162b] leading-tight px-1 group-hover:bg-[#5a4897] group-hover:text-white rounded-sm">
+                My Memories
+              </span>
             </div>
-            <span className="text-[10px] font-bold text-[#1a162b] leading-tight px-1 group-hover:bg-[#5a4897] group-hover:text-white rounded-sm">
-              Story_Player.exe
-            </span>
-          </div>
 
-          {/* Icon: Add Memory */}
-          <div
-            onClick={() => handleToggleWindow('upload')}
-            className="flex flex-col items-center gap-1 p-2 rounded cursor-pointer group hover:bg-[#b0a8d6]/50 transition w-20 text-center"
-          >
-            <div className="w-10 h-10 retro-box-outset bg-[#dfdbed] flex items-center justify-center group-hover:scale-105 transition shadow-md">
-              <Plus className="w-6 h-6 text-emerald-600" />
+            {/* Icon: Story Player */}
+            <div
+              onClick={() => handleOpenStory(0)}
+              className="flex flex-col items-center gap-1 p-2 rounded cursor-pointer group hover:bg-[#b0a8d6]/50 transition w-20 text-center"
+            >
+              <div className="w-10 h-10 retro-box-outset bg-[#dfdbed] flex items-center justify-center group-hover:scale-105 transition shadow-md">
+                <Monitor className="w-6 h-6 text-rose-500" />
+              </div>
+              <span className="text-[10px] font-bold text-[#1a162b] leading-tight px-1 group-hover:bg-[#5a4897] group-hover:text-white rounded-sm">
+                Story_Player.exe
+              </span>
             </div>
-            <span className="text-[10px] font-bold text-[#1a162b] leading-tight px-1 group-hover:bg-[#5a4897] group-hover:text-white rounded-sm">
-              Add_Memory.exe
-            </span>
-          </div>
 
-          {/* Icon: Music Catalog */}
-          <div
-            onClick={() => handleToggleWindow('music')}
-            className="flex flex-col items-center gap-1 p-2 rounded cursor-pointer group hover:bg-[#b0a8d6]/50 transition w-20 text-center"
-          >
-            <div className="w-10 h-10 retro-box-outset bg-[#dfdbed] flex items-center justify-center group-hover:scale-105 transition shadow-md">
-              <Music className="w-6 h-6 text-[#5a4897]" />
+            {/* Icon: Add Memory */}
+            <div
+              onClick={() => handleToggleWindow('upload')}
+              className="flex flex-col items-center gap-1 p-2 rounded cursor-pointer group hover:bg-[#b0a8d6]/50 transition w-20 text-center"
+            >
+              <div className="w-10 h-10 retro-box-outset bg-[#dfdbed] flex items-center justify-center group-hover:scale-105 transition shadow-md">
+                <Plus className="w-6 h-6 text-emerald-600" />
+              </div>
+              <span className="text-[10px] font-bold text-[#1a162b] leading-tight px-1 group-hover:bg-[#5a4897] group-hover:text-white rounded-sm">
+                Add_Memory.exe
+              </span>
             </div>
-            <span className="text-[10px] font-bold text-[#1a162b] leading-tight px-1 group-hover:bg-[#5a4897] group-hover:text-white rounded-sm">
-              Music_Catalog.app
-            </span>
-          </div>
 
-          {/* Icon: Instagram Importer */}
-          <div
-            onClick={() => handleToggleWindow('igImport')}
-            className="flex flex-col items-center gap-1 p-2 rounded cursor-pointer group hover:bg-[#b0a8d6]/50 transition w-20 text-center"
-          >
-            <div className="w-10 h-10 retro-box-outset bg-[#dfdbed] flex items-center justify-center group-hover:scale-105 transition shadow-md">
-              <Camera className="w-6 h-6 text-rose-600" />
+            {/* Icon: Music Catalog */}
+            <div
+              onClick={() => handleToggleWindow('music')}
+              className="flex flex-col items-center gap-1 p-2 rounded cursor-pointer group hover:bg-[#b0a8d6]/50 transition w-20 text-center"
+            >
+              <div className="w-10 h-10 retro-box-outset bg-[#dfdbed] flex items-center justify-center group-hover:scale-105 transition shadow-md">
+                <Music className="w-6 h-6 text-[#5a4897]" />
+              </div>
+              <span className="text-[10px] font-bold text-[#1a162b] leading-tight px-1 group-hover:bg-[#5a4897] group-hover:text-white rounded-sm">
+                Music_Catalog.app
+              </span>
             </div>
-            <span className="text-[10px] font-bold text-[#1a162b] leading-tight px-1 group-hover:bg-[#5a4897] group-hover:text-white rounded-sm">
-              IG_Import.exe
-            </span>
-          </div>
 
-          {/* Icon: New Album */}
-          <div
-            onClick={() => setNewAlbumOpen(true)}
-            className="flex flex-col items-center gap-1 p-2 rounded cursor-pointer group hover:bg-[#b0a8d6]/50 transition w-20 text-center"
-          >
-            <div className="w-10 h-10 retro-box-outset bg-[#dfdbed] flex items-center justify-center group-hover:scale-105 transition shadow-md">
-              <FolderPlus className="w-6 h-6 text-amber-700" />
+            {/* Icon: Instagram Importer */}
+            <div
+              onClick={() => handleToggleWindow('igImport')}
+              className="flex flex-col items-center gap-1 p-2 rounded cursor-pointer group hover:bg-[#b0a8d6]/50 transition w-20 text-center"
+            >
+              <div className="w-10 h-10 retro-box-outset bg-[#dfdbed] flex items-center justify-center group-hover:scale-105 transition shadow-md">
+                <Camera className="w-6 h-6 text-rose-600" />
+              </div>
+              <span className="text-[10px] font-bold text-[#1a162b] leading-tight px-1 group-hover:bg-[#5a4897] group-hover:text-white rounded-sm">
+                IG_Import.exe
+              </span>
             </div>
-            <span className="text-[10px] font-bold text-[#1a162b] leading-tight px-1 group-hover:bg-[#5a4897] group-hover:text-white rounded-sm">
-              New_Album.fldr
-            </span>
-          </div>
 
-          {/* Icon: README.txt */}
-          <div
-            onClick={() => handleToggleWindow('readme')}
-            className="flex flex-col items-center gap-1 p-2 rounded cursor-pointer group hover:bg-[#b0a8d6]/50 transition w-20 text-center"
-          >
-            <div className="w-10 h-10 retro-box-outset bg-[#dfdbed] flex items-center justify-center group-hover:scale-105 transition shadow-md">
-              <FileText className="w-6 h-6 text-neutral-600" />
+            {/* Icon: New Album */}
+            <div
+              onClick={() => setNewAlbumOpen(true)}
+              className="flex flex-col items-center gap-1 p-2 rounded cursor-pointer group hover:bg-[#b0a8d6]/50 transition w-20 text-center"
+            >
+              <div className="w-10 h-10 retro-box-outset bg-[#dfdbed] flex items-center justify-center group-hover:scale-105 transition shadow-md">
+                <FolderPlus className="w-6 h-6 text-amber-700" />
+              </div>
+              <span className="text-[10px] font-bold text-[#1a162b] leading-tight px-1 group-hover:bg-[#5a4897] group-hover:text-white rounded-sm">
+                New_Album.fldr
+              </span>
             </div>
-            <span className="text-[10px] font-bold text-[#1a162b] leading-tight px-1 group-hover:bg-[#5a4897] group-hover:text-white rounded-sm">
-              README.txt
-            </span>
-          </div>
 
-          {/* Icon: Recycle Bin */}
-          <div
-            onClick={() => alert('Recycle Bin is empty. Vault records are kept clean.')}
-            className="flex flex-col items-center gap-1 p-2 rounded cursor-pointer group hover:bg-[#b0a8d6]/50 transition w-20 text-center"
-          >
-            <div className="w-10 h-10 retro-box-outset bg-[#dfdbed] flex items-center justify-center group-hover:scale-105 transition shadow-md">
-              <Trash2 className="w-6 h-6 text-neutral-500" />
+            {/* Icon: README.txt */}
+            <div
+              onClick={() => handleToggleWindow('readme')}
+              className="flex flex-col items-center gap-1 p-2 rounded cursor-pointer group hover:bg-[#b0a8d6]/50 transition w-20 text-center"
+            >
+              <div className="w-10 h-10 retro-box-outset bg-[#dfdbed] flex items-center justify-center group-hover:scale-105 transition shadow-md">
+                <FileText className="w-6 h-6 text-neutral-600" />
+              </div>
+              <span className="text-[10px] font-bold text-[#1a162b] leading-tight px-1 group-hover:bg-[#5a4897] group-hover:text-white rounded-sm">
+                README.txt
+              </span>
             </div>
-            <span className="text-[10px] font-bold text-[#1a162b] leading-tight px-1 group-hover:bg-[#5a4897] group-hover:text-white rounded-sm">
-              Trash.bin
-            </span>
-          </div>
-        </div>
 
-        {/* Center: Main Windows Area */}
-        <div className="flex-1 w-full max-w-5xl z-20">
-          {openWindows.gallery && (
-            <AlbumGrid
-              items={memories}
-              albums={albums}
-              selectedAlbum={selectedAlbum}
-              onSelectAlbum={setSelectedAlbum}
-              onOpenStory={handleOpenStory}
-              onToggleFavorite={handleToggleFavorite}
-              onDeleteItem={handleDeleteItem}
-              onOpenUpload={() => handleToggleWindow('upload')}
-              onOpenNewAlbum={() => setNewAlbumOpen(true)}
-              onOpenMusicSearch={() => handleToggleWindow('music')}
-              onExportVault={handleExportVault}
-              onOpenIgImport={() => handleToggleWindow('igImport')}
-              onMoveItemsToAlbum={handleMoveItemsToAlbum}
-              onDeleteAlbum={handleDeleteAlbum}
-              onClose={() => setOpenWindows((prev) => ({ ...prev, gallery: false }))}
-            />
-          )}
-        </div>
+            {/* Icon: Recycle Bin */}
+            <div
+              onClick={() => alert('Recycle Bin is empty. Vault records are kept clean.')}
+              className="flex flex-col items-center gap-1 p-2 rounded cursor-pointer group hover:bg-[#b0a8d6]/50 transition w-20 text-center"
+            >
+              <div className="w-10 h-10 retro-box-outset bg-[#dfdbed] flex items-center justify-center group-hover:scale-105 transition shadow-md">
+                <Trash2 className="w-6 h-6 text-neutral-500" />
+              </div>
+              <span className="text-[10px] font-bold text-[#1a162b] leading-tight px-1 group-hover:bg-[#5a4897] group-hover:text-white rounded-sm">
+                Trash.bin
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Center: Main Windows Area (With iPhone Frame wrapper if isMobileSimulator is active) */}
+        {isMobileSimulator ? (
+          <div className="relative w-full max-w-[420px] rounded-[52px] p-3.5 bg-neutral-900 border-[6px] border-neutral-700 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] flex flex-col z-20 my-2">
+            
+            {/* iOS Dynamic Island & Status Bar */}
+            <div className="w-full flex items-center justify-between px-6 pt-2 pb-1 text-white select-none z-30">
+              <span className="font-sans font-bold text-xs tracking-tight">9:41</span>
+              {/* Dynamic Island Pill */}
+              <div className="w-24 h-6 bg-black rounded-full flex items-center justify-between px-2.5 mx-auto shadow-inner">
+                <div className="w-2.5 h-2.5 rounded-full bg-neutral-900 border border-neutral-800" />
+                <div className="w-2 h-2 rounded-full bg-indigo-950" />
+              </div>
+              <div className="flex items-center gap-1 text-[10px]">
+                <Wifi className="w-3.5 h-3.5" />
+                <span className="font-bold text-[9px]">5G</span>
+                <Battery className="w-4 h-4 fill-white" />
+              </div>
+            </div>
+
+            {/* iPhone Inner Screen Viewport */}
+            <div className="w-full rounded-[40px] overflow-hidden bg-[#dfdbed] min-h-[750px] max-h-[82vh] overflow-y-auto flex flex-col relative">
+              {openWindows.gallery && (
+                <AlbumGrid
+                  items={memories}
+                  albums={albums}
+                  selectedAlbum={selectedAlbum}
+                  onSelectAlbum={setSelectedAlbum}
+                  onOpenStory={handleOpenStory}
+                  onToggleFavorite={handleToggleFavorite}
+                  onDeleteItem={handleDeleteItem}
+                  onOpenUpload={() => handleToggleWindow('upload')}
+                  onOpenNewAlbum={() => setNewAlbumOpen(true)}
+                  onOpenMusicSearch={() => handleToggleWindow('music')}
+                  onExportVault={handleExportVault}
+                  onOpenIgImport={() => handleToggleWindow('igImport')}
+                  onMoveItemsToAlbum={handleMoveItemsToAlbum}
+                  onDeleteAlbum={handleDeleteAlbum}
+                  onClose={() => setOpenWindows((prev) => ({ ...prev, gallery: false }))}
+                  onOpenShareExtension={() => handleToggleWindow('shareExtension')}
+                  isMobileSimulator={isMobileSimulator}
+                  onToggleMobileSimulator={() => setIsMobileSimulator(false)}
+                />
+              )}
+            </div>
+
+            {/* Bottom iOS Home Indicator Pill */}
+            <div className="w-32 h-1 bg-white/70 rounded-full mx-auto mt-2.5 mb-1" />
+          </div>
+        ) : (
+          <div className="flex-1 w-full max-w-5xl z-20">
+            {openWindows.gallery && (
+              <AlbumGrid
+                items={memories}
+                albums={albums}
+                selectedAlbum={selectedAlbum}
+                onSelectAlbum={setSelectedAlbum}
+                onOpenStory={handleOpenStory}
+                onToggleFavorite={handleToggleFavorite}
+                onDeleteItem={handleDeleteItem}
+                onOpenUpload={() => handleToggleWindow('upload')}
+                onOpenNewAlbum={() => setNewAlbumOpen(true)}
+                onOpenMusicSearch={() => handleToggleWindow('music')}
+                onExportVault={handleExportVault}
+                onOpenIgImport={() => handleToggleWindow('igImport')}
+                onMoveItemsToAlbum={handleMoveItemsToAlbum}
+                onDeleteAlbum={handleDeleteAlbum}
+                onClose={() => setOpenWindows((prev) => ({ ...prev, gallery: false }))}
+                onOpenShareExtension={() => handleToggleWindow('shareExtension')}
+                isMobileSimulator={isMobileSimulator}
+                onToggleMobileSimulator={() => setIsMobileSimulator(true)}
+              />
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Retro Bottom Taskbar */}
-      <RetroTaskbar
-        openWindows={openWindows}
-        activeWindow={activeWindow}
-        onToggleWindow={handleToggleWindow}
-        onExportVault={handleExportVault}
+      {/* Retro Bottom Taskbar (Only on Desktop mode) */}
+      {!isMobileSimulator && (
+        <RetroTaskbar
+          openWindows={openWindows}
+          activeWindow={activeWindow}
+          onToggleWindow={handleToggleWindow}
+          onExportVault={handleExportVault}
+        />
+      )}
+
+      {/* Window: Solution A iOS Share Sheet Extension Simulator */}
+      <ShareExtensionModal
+        isOpen={openWindows.shareExtension}
+        onClose={() => setOpenWindows((prev) => ({ ...prev, shareExtension: false }))}
+        albums={albums}
+        onAddSharedItem={handleSaveMemory}
       />
 
       {/* Window: Story Viewer (Instagram Story in 1999 CRT Player) */}
@@ -431,7 +531,6 @@ export default function Home() {
         isOpen={openWindows.music}
         onClose={() => setOpenWindows((prev) => ({ ...prev, music: false }))}
         onSelectTrack={() => {
-          // Open upload modal with selected track
           setOpenWindows((prev) => ({ ...prev, upload: true, music: false }));
         }}
       />

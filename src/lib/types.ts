@@ -1,4 +1,6 @@
 export type MediaType = 'photo' | 'video';
+export type CardRarity = 'trap-magenta' | 'gold-rare' | 'cyber-platinum';
+export type CardMood = 'STORY' | 'REEL' | 'SUMMER' | 'NIGHT' | 'CHILL' | 'PARTY';
 
 export interface AudioTrack {
   id: string;
@@ -37,6 +39,10 @@ export interface MediaItem {
   };
   durationSeconds: number; // Duration to display in story mode (e.g. 7s for photo, or video duration)
   isFavorite?: boolean;
+  cardStyle?: {
+    rarity?: CardRarity;
+    mood?: CardMood;
+  };
 }
 
 export interface Album {

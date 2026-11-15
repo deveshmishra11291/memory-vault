@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Lock, Volume2, VolumeX, Folder, Plus, Music, 
-  FileText, Download, ShieldCheck, Sparkles, Monitor, Camera
+  FileText, Download, ShieldCheck, Sparkles, Monitor, Camera,
+  Share2, Smartphone
 } from 'lucide-react';
 
 interface RetroTaskbarProps {
@@ -14,9 +15,10 @@ interface RetroTaskbarProps {
     music: boolean;
     readme: boolean;
     igImport?: boolean;
+    shareExtension?: boolean;
   };
   activeWindow: string;
-  onToggleWindow: (win: 'gallery' | 'story' | 'upload' | 'music' | 'readme' | 'igImport') => void;
+  onToggleWindow: (win: 'gallery' | 'story' | 'upload' | 'music' | 'readme' | 'igImport' | 'shareExtension') => void;
   onExportVault: () => void;
 }
 
@@ -58,7 +60,7 @@ export default function RetroTaskbar({
       {startMenuOpen && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="fixed bottom-10 left-1 z-50 w-64 retro-box-outset flex overflow-hidden shadow-2xl font-mono text-xs animate-in slide-in-from-bottom-2 duration-100"
+          className="fixed bottom-10 left-1 z-50 w-72 retro-box-outset flex overflow-hidden shadow-2xl font-mono text-xs animate-in slide-in-from-bottom-2 duration-100"
         >
           {/* Left Vertical Banner (Desktop 1999 Style) */}
           <div className="w-8 bg-gradient-to-t from-[#362959] via-[#5a4897] to-[#8070b8] text-white flex items-end justify-center pb-3 select-none">
@@ -71,6 +73,17 @@ export default function RetroTaskbar({
 
           {/* Menu Items */}
           <div className="flex-1 p-1 bg-[#dfdbed] space-y-0.5 text-black">
+            <button
+              onClick={() => {
+                onToggleWindow('shareExtension');
+                setStartMenuOpen(false);
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-left bg-amber-100/70 hover:bg-[#5a4897] hover:text-white transition font-bold"
+            >
+              <Share2 className="w-4 h-4 text-amber-700" />
+              <span>⚡ iOS Share to Vault...</span>
+            </button>
+
             <button
               onClick={() => {
                 onToggleWindow('upload');
@@ -168,7 +181,7 @@ export default function RetroTaskbar({
           <div className="w-[2px] h-5 border-l border-[#807a99] border-r border-white mx-0.5" />
 
           {/* Active Window Taskbar Buttons */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 overflow-x-auto max-w-[70vw]">
             {openWindows.gallery && (
               <button
                 onClick={() => onToggleWindow('gallery')}
@@ -180,6 +193,20 @@ export default function RetroTaskbar({
               >
                 <Folder className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
                 <span className="truncate">My Memories</span>
+              </button>
+            )}
+
+            {openWindows.shareExtension && (
+              <button
+                onClick={() => onToggleWindow('shareExtension')}
+                className={`h-7 px-3 max-w-[170px] truncate retro-btn text-[11px] flex items-center gap-1.5 ${
+                  activeWindow === 'shareExtension'
+                    ? 'border-t-[#332d47] border-l-[#332d47] border-b-white border-r-white bg-[#cec8e3]'
+                    : 'bg-amber-100/60'
+                }`}
+              >
+                <Share2 className="w-3.5 h-3.5 text-amber-700 flex-shrink-0" />
+                <span className="truncate">⚡ iOS Share Sheet</span>
               </button>
             )}
 
