@@ -80,17 +80,13 @@ export default function VaultCard({
     >
       {/* Main Collectible Card Frame (Image 2 TCG Style - 100% Original Copyright-Safe) */}
       <div 
-        onClick={handleOpenClick}
-        className={`${frameClass} relative w-full max-w-[320px] sm:max-w-[340px] mx-auto rounded-xl p-3 text-neutral-900 transition-transform duration-150 ease-out shadow-2xl cursor-pointer ${
+        className={`${frameClass} relative w-full max-w-[320px] sm:max-w-[340px] mx-auto rounded-xl p-3 text-neutral-900 transition-transform duration-150 ease-out shadow-2xl ${
           isSelected ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-purple-900 scale-[1.02]' : ''
         }`}
         style={{
           transform: `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
           transformStyle: 'preserve-3d',
         }}
-        role="button"
-        tabIndex={0}
-        title="Tap or click to open story player"
       >
         {/* Holographic Sheen Layer on hover */}
         {isHovered && <div className="holo-overlay absolute inset-0 rounded-xl z-20 pointer-events-none" />}

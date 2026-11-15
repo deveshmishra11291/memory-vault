@@ -29,7 +29,9 @@ export default function VaultCardDeckSlider({
 }: VaultCardDeckSliderProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [touchDeltaX, setTouchDeltaX] = useState<number>(0);
+  const [touchDeltaY, setTouchDeltaY] = useState<number>(0);
 
   // Clamped index
   const safeIndex = Math.min(Math.max(0, currentIndex), Math.max(0, items.length - 1));
@@ -51,32 +53,49 @@ export default function VaultCardDeckSlider({
   if (!items || items.length === 0) return null;
 
   // Touch Swipe Handlers for Mobile (Android & iOS)
+  // Distinguishes strictly between vertical page scroll vs horizontal card swipe!
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartX(e.touches[0].clientX);
+    setTouchStartY(e.touches[0].clientY);
     setTouchDeltaX(0);
+    setTouchDeltaY(0);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchStartX === null) return;
-    const delta = e.touches[0].clientX - touchStartX;
-    setTouchDeltaX(delta);
+    if (touchStartX === null || touchStartY === null) return;
+    const deltaX = e.touches[0].clientX - touchStartX;
+    const deltaY = e.touches[0].clientY - touchStartY;
+    setTouchDeltaY(deltaY);
+
+    // Only apply horizontal visual drag if user is swiping horizontally, not scrolling vertically
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      setTouchDeltaX(deltaX);
+    } else {
+      setTouchDeltaX(0);
+    }
   };
 
   const handleTouchEnd = () => {
-    if (touchStartX === null) return;
-    const delta = touchDeltaX;
-    if (delta < -35 && safeIndex < items.length - 1) {
-      // Swiped Left -> Next Card
-      setCurrentIndex((prev) => prev + 1);
-    } else if (delta > 35 && safeIndex > 0) {
-      // Swiped Right -> Previous Card
-      setCurrentIndex((prev) => prev - 1);
-    } else if (Math.abs(delta) < 15) {
-      // Clean tap on card on mobile -> Open story player directly!
-      onOpenStory(safeIndex);
+    if (touchStartX === null || touchStartY === null) return;
+    const deltaX = touchDeltaX;
+    const deltaY = touchDeltaY;
+
+    // Only advance card if it was a deliberate horizontal swipe (gesture was mostly horizontal and > 45px)
+    if (Math.abs(deltaX) > 45 && Math.abs(deltaX) > Math.abs(deltaY) * 1.3) {
+      if (deltaX < -45 && safeIndex < items.length - 1) {
+        // Swiped Left -> Next Card
+        setCurrentIndex((prev) => prev + 1);
+      } else if (deltaX > 45 && safeIndex > 0) {
+        // Swiped Right -> Previous Card
+        setCurrentIndex((prev) => prev - 1);
+      }
     }
+
+    // Clean reset: NEVER trigger story open on touch end so vertical scrolling is 100% safe!
     setTouchStartX(null);
+    setTouchStartY(null);
     setTouchDeltaX(0);
+    setTouchDeltaY(0);
   };
 
   const prevItem = safeIndex > 0 ? items[safeIndex - 1] : null;
@@ -108,7 +127,7 @@ export default function VaultCardDeckSlider({
 
       {/* 2. Main Sliding Stage with Touch Swipe & Click Support */}
       <div 
-        className="relative w-full flex items-center justify-center min-h-[490px] overflow-hidden px-1"
+        className="relative w-full flex items-center justify-center min-h-[490px] overflow-hidden px-1 touch-pan-y"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
