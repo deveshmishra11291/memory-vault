@@ -54,8 +54,15 @@ export default function AlbumGrid({
   isMobileSimulator = false,
   onToggleMobileSimulator,
 }: AlbumGridProps) {
-  // View Mode: 'classic' (Retro Player Grid - user default) vs 'deck' (Collectible Trading Cards Deck)
-  const [viewMode, setViewMode] = useState<'classic' | 'deck'>('classic');
+  // View Mode: 'deck' (Card View - default in iPhone mode) vs 'classic' (Player Grid)
+  const [viewMode, setViewMode] = useState<'classic' | 'deck'>(isMobileSimulator ? 'deck' : 'deck');
+
+  // Auto-switch to Card View when iPhone view is toggled
+  React.useEffect(() => {
+    if (isMobileSimulator) {
+      setViewMode('deck');
+    }
+  }, [isMobileSimulator]);
 
   // Deck sub-mode: 'slider' (Swipe/Slide 1 card at a time) vs 'grid' (All cards overview)
   const [deckSubMode, setDeckSubMode] = useState<'slider' | 'grid'>('slider');

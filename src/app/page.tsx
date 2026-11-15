@@ -280,7 +280,10 @@ export default function Home() {
             <span className="text-[10px] text-neutral-400">• App Store Ready Native Touch Layout</span>
           </div>
           <button
-            onClick={() => setIsMobileSimulator(false)}
+            onClick={() => {
+              setIsMobileSimulator(false);
+              setOpenWindows((prev) => ({ ...prev, story: false }));
+            }}
             className="px-2.5 py-1 bg-neutral-800 hover:bg-neutral-700 rounded text-neutral-200 text-xs font-bold transition flex items-center gap-1"
           >
             <span>Exit iPhone View</span>
@@ -455,7 +458,10 @@ export default function Home() {
                   onClose={() => setOpenWindows((prev) => ({ ...prev, gallery: false }))}
                   onOpenShareExtension={() => handleToggleWindow('shareExtension')}
                   isMobileSimulator={isMobileSimulator}
-                  onToggleMobileSimulator={() => setIsMobileSimulator(false)}
+                  onToggleMobileSimulator={() => {
+                    setIsMobileSimulator(false);
+                    setOpenWindows((prev) => ({ ...prev, story: false }));
+                  }}
                 />
               )}
             </div>
@@ -484,7 +490,10 @@ export default function Home() {
                 onClose={() => setOpenWindows((prev) => ({ ...prev, gallery: false }))}
                 onOpenShareExtension={() => handleToggleWindow('shareExtension')}
                 isMobileSimulator={isMobileSimulator}
-                onToggleMobileSimulator={() => setIsMobileSimulator(true)}
+                onToggleMobileSimulator={() => {
+                  setIsMobileSimulator(true);
+                  setOpenWindows((prev) => ({ ...prev, story: false }));
+                }}
               />
             )}
           </div>
