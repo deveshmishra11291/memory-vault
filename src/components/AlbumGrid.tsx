@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import MoveToAlbumModal from '@/components/MoveToAlbumModal';
 import VaultCard from '@/components/VaultCard';
+import VaultCardDeckSlider from '@/components/VaultCardDeckSlider';
 import RetroSoundDeck from '@/components/RetroSoundDeck';
 
 interface AlbumGridProps {
@@ -58,6 +59,9 @@ export default function AlbumGrid({
   // View Mode: 'deck' (Collectible Trading Cards TCG style) vs 'classic' (Win95 Explorer Grid)
   const [viewMode, setViewMode] = useState<'deck' | 'classic'>('deck');
 
+  // Deck sub-mode: 'slider' (Swipe/Slide 1 card at a time) vs 'grid' (All cards overview)
+  const [deckSubMode, setDeckSubMode] = useState<'slider' | 'grid'>('slider');
+
   // Window State
   const [isMaximized, setIsMaximized] = useState(false);
 
@@ -72,7 +76,6 @@ export default function AlbumGrid({
   const [deckPlaying, setDeckPlaying] = useState(false);
   const [deckTime, setDeckTime] = useState(93); // 1:33
   const [deckVolume, setDeckVolume] = useState(0.85);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Filter items by album
   const filteredItems = selectedAlbum === 'all'
@@ -142,7 +145,7 @@ export default function AlbumGrid({
   const allFilteredSelected = filteredItems.length > 0 && selectedIds.length === filteredItems.length;
 
   return (
-    <div className={`retro-box-outset shadow-2xl font-mono text-xs transition-all ${
+    <div className={`retro-box-outset shadow-2xl font-mono text-xs transition-all w-full max-w-full overflow-x-hidden ${
       isMaximized 
         ? 'fixed inset-3 z-40 max-w-none mb-0 flex flex-col bg-[#dfdbed]' 
         : 'w-full mb-12 flex flex-col'
@@ -150,17 +153,16 @@ export default function AlbumGrid({
       
       {/* 1. Retro Title Bar with Working Minimize, Maximize, and Exit Buttons */}
       <div className="retro-titlebar select-none flex-shrink-0">
-        <div className="flex items-center gap-2 truncate">
+        <div className="flex items-center gap-2 truncate min-w-0">
           <Folder className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
           <span className="truncate">
             My Memories — [C:\Vault\{activeAlbumObj?.name.replace(/[^a-zA-Z0-9]/g, '_') || 'All'}]
           </span>
-          <span className="text-[10px] text-amber-200 ml-2 hidden sm:inline-block">
-            {viewMode === 'deck' ? '🎴 Collectible Deck Mode' : '📁 Win95 Explorer Mode'}
+          <span className="text-[10px] text-amber-200 ml-1 hidden md:inline-block truncate">
+            {viewMode === 'deck' ? '🎴 Collectible Deck' : '📁 Explorer Grid'}
           </span>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
-          {/* Minimize button: hides window to taskbar */}
           <button 
             type="button" 
             onClick={onClose} 
@@ -169,7 +171,6 @@ export default function AlbumGrid({
           >
             _
           </button>
-          {/* Maximize button: expands window full screen */}
           <button 
             type="button" 
             onClick={() => setIsMaximized(!isMaximized)} 
@@ -178,7 +179,6 @@ export default function AlbumGrid({
           >
             {isMaximized ? '❐' : '□'}
           </button>
-          {/* Exit / Close button: closes window */}
           <button 
             type="button" 
             onClick={onClose} 
@@ -191,8 +191,8 @@ export default function AlbumGrid({
       </div>
 
       {/* 2. Menu Bar */}
-      <div className="px-2 py-1 bg-[#dfdbed] border-b border-[#a09bb8] flex items-center justify-between text-[11px] text-[#2d2642] select-none flex-shrink-0">
-        <div className="flex gap-3">
+      <div className="px-2 py-1 bg-[#dfdbed] border-b border-[#a09bb8] flex items-center justify-between text-[11px] text-[#2d2642] select-none flex-shrink-0 overflow-x-auto">
+        <div className="flex gap-2 sm:gap-3 flex-shrink-0">
           <span className="hover:bg-[#5a4897] hover:text-white px-1 cursor-pointer">File</span>
           <span className="hover:bg-[#5a4897] hover:text-white px-1 cursor-pointer">Edit</span>
           <span 
@@ -201,7 +201,6 @@ export default function AlbumGrid({
           >
             View ({viewMode === 'deck' ? 'Cards' : 'Grid'})
           </span>
-          <span className="hover:bg-[#5a4897] hover:text-white px-1 cursor-pointer">Favorites</span>
           <span 
             onClick={() => onOpenShareExtension && onOpenShareExtension()}
             className="hover:bg-[#5a4897] hover:text-white px-1 cursor-pointer text-indigo-800 font-bold"
@@ -210,52 +209,51 @@ export default function AlbumGrid({
           </span>
         </div>
 
-        {/* Delete current album shortcut in menu bar */}
         {selectedAlbum !== 'all' && (
           <button
             type="button"
             onClick={() => onDeleteAlbum(selectedAlbum)}
-            className="text-rose-700 hover:bg-rose-100 hover:underline px-1 flex items-center gap-1 font-bold text-[10px]"
+            className="text-rose-700 hover:bg-rose-100 hover:underline px-1 flex items-center gap-1 font-bold text-[10px] flex-shrink-0 ml-2"
           >
             <Trash2 className="w-3 h-3 text-rose-600" />
-            <span>Delete Current Album</span>
+            <span className="hidden sm:inline">Delete Album</span>
           </button>
         )}
       </div>
 
       {/* 3. Retro Toolbar (Desktop 1999 Style + Solution A iOS Ingest + View Mode Toggles) */}
-      <div className="px-2 py-1.5 bg-[#dfdbed] border-b border-[#a09bb8] flex flex-wrap items-center gap-2 select-none flex-shrink-0">
+      <div className="px-2 py-1.5 bg-[#dfdbed] border-b border-[#a09bb8] flex flex-wrap items-center gap-1.5 select-none flex-shrink-0 max-w-full">
         
         {/* Solution A 1-Tap iOS Share Extension Simulator */}
         {onOpenShareExtension && (
           <button
             onClick={onOpenShareExtension}
-            className="retro-btn bg-gradient-to-r from-amber-200 to-amber-300 font-bold border-amber-600 text-black flex items-center gap-1.5 shadow"
+            className="retro-btn bg-gradient-to-r from-amber-200 to-amber-300 font-bold border-amber-600 text-black flex items-center gap-1 shadow flex-shrink-0 text-[10px]"
             title="Solution A: 1-Tap iOS Share to Vault (App Store & Instagram)"
           >
-            <Share2 className="w-3.5 h-3.5 text-indigo-900" />
-            <span>⚡ iOS Share to Vault</span>
+            <Share2 className="w-3 h-3 text-indigo-900" />
+            <span>⚡ Share Ingest</span>
           </button>
         )}
 
         {/* View Mode Switcher: Collectible Cards vs Classic Explorer */}
-        <div className="flex items-center retro-box-inset p-0.5 bg-[#d4cee6]">
+        <div className="flex items-center retro-box-inset p-0.5 bg-[#d4cee6] flex-shrink-0">
           <button
             onClick={() => setViewMode('deck')}
-            className={`px-2 py-0.5 text-[10px] font-bold rounded-xs flex items-center gap-1 transition ${
+            className={`px-1.5 py-0.5 text-[10px] font-bold rounded-xs flex items-center gap-1 transition ${
               viewMode === 'deck'
                 ? 'bg-[#5a4897] text-white shadow-xs'
                 : 'text-neutral-700 hover:text-black'
             }`}
-            title="Collectible VaultCard Deck (Image 2 TCG Style)"
+            title="Collectible VaultCard Deck"
           >
             <Layers className="w-3 h-3" />
-            <span>🎴 Collectible Cards</span>
+            <span>🎴 Cards</span>
           </button>
 
           <button
             onClick={() => setViewMode('classic')}
-            className={`px-2 py-0.5 text-[10px] font-bold rounded-xs flex items-center gap-1 transition ${
+            className={`px-1.5 py-0.5 text-[10px] font-bold rounded-xs flex items-center gap-1 transition ${
               viewMode === 'classic'
                 ? 'bg-[#5a4897] text-white shadow-xs'
                 : 'text-neutral-700 hover:text-black'
@@ -263,19 +261,19 @@ export default function AlbumGrid({
             title="Classic Windows 95 Explorer Grid"
           >
             <Grid className="w-3 h-3" />
-            <span>📁 Explorer Grid</span>
+            <span>📁 Grid</span>
           </button>
         </div>
 
         {/* Toggle Sound Deck Widget */}
         <button
           onClick={() => setShowSoundDeck(!showSoundDeck)}
-          className={`retro-btn flex items-center gap-1 ${
+          className={`retro-btn flex items-center gap-1 flex-shrink-0 text-[10px] ${
             showSoundDeck ? 'bg-[#c5bee6] font-bold' : ''
           }`}
           title="Toggle Retro Silk Sonic Sound Deck Gadget (Image 1)"
         >
-          <Disc3 className={`w-3.5 h-3.5 ${deckPlaying ? 'text-rose-600 animate-spin' : 'text-neutral-700'}`} />
+          <Disc3 className={`w-3 h-3 ${deckPlaying ? 'text-rose-600 animate-spin' : 'text-neutral-700'}`} />
           <span>Sound Deck</span>
         </button>
 
@@ -283,39 +281,37 @@ export default function AlbumGrid({
         {onToggleMobileSimulator && (
           <button
             onClick={onToggleMobileSimulator}
-            className={`retro-btn flex items-center gap-1 ${
+            className={`retro-btn flex items-center gap-1 flex-shrink-0 text-[10px] ${
               isMobileSimulator ? 'bg-indigo-200 font-bold' : ''
             }`}
-            title="Preview inside iPhone 16 Pro Frame"
+            title="Toggle iPhone 16 Pro Frame"
           >
-            <Smartphone className="w-3.5 h-3.5 text-indigo-800" />
-            <span>{isMobileSimulator ? 'Desktop View' : '📱 iOS Frame'}</span>
+            <Smartphone className="w-3 h-3 text-indigo-800" />
+            <span>{isMobileSimulator ? 'Desktop' : '📱 iOS View'}</span>
           </button>
         )}
 
-        <div className="w-px h-5 bg-[#a09bb8] mx-0.5" />
-
         <button
           onClick={onOpenUpload}
-          className="retro-btn"
+          className="retro-btn flex items-center gap-1 flex-shrink-0 text-[10px]"
           title="Add New Memory"
         >
-          <Plus className="w-3.5 h-3.5 text-emerald-700" />
-          <span>Add Memory</span>
+          <Plus className="w-3 h-3 text-emerald-700" />
+          <span>Add</span>
         </button>
 
         <button
           onClick={onOpenNewAlbum}
-          className="retro-btn"
+          className="retro-btn flex items-center gap-1 flex-shrink-0 text-[10px]"
           title="Create New Album"
         >
-          <FolderPlus className="w-3.5 h-3.5 text-amber-700" />
+          <FolderPlus className="w-3 h-3 text-amber-700" />
           <span>New Album</span>
         </button>
 
         {/* Master Select All Checkbox Button */}
         <label 
-          className={`retro-btn flex items-center gap-1.5 cursor-pointer transition ${
+          className={`retro-btn flex items-center gap-1 cursor-pointer transition flex-shrink-0 text-[10px] ${
             selectedIds.length > 0 ? 'bg-[#5a4897] text-white font-bold' : 'bg-[#ede9f7]'
           }`}
           title="Select all stories in this album"
@@ -324,151 +320,90 @@ export default function AlbumGrid({
             type="checkbox"
             checked={allFilteredSelected}
             onChange={(e) => handleSelectAll(e.target.checked)}
-            className="w-3.5 h-3.5 cursor-pointer accent-[#5a4897]"
+            className="w-3 h-3 cursor-pointer accent-[#5a4897]"
           />
           <span>
             {allFilteredSelected 
               ? 'Deselect All' 
-              : `Select All (${filteredItems.length})`}
+              : `Select (${filteredItems.length})`}
           </span>
-          {selectedIds.length > 0 && !allFilteredSelected && (
-            <span className="ml-0.5 px-1 bg-amber-400 text-black text-[9px] rounded-sm font-bold">
-              {selectedIds.length}
-            </span>
-          )}
         </label>
-
-        {/* Delete Album Toolbar Button */}
-        {selectedAlbum !== 'all' && (
-          <button
-            type="button"
-            onClick={() => onDeleteAlbum(selectedAlbum)}
-            className="retro-btn text-rose-700 hover:bg-rose-100 font-bold flex items-center gap-1"
-            title={`Delete "${activeAlbumObj?.name}" album folder`}
-          >
-            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-            <span>Delete Album</span>
-          </button>
-        )}
-
-        <button
-          onClick={onOpenMusicSearch}
-          className="retro-btn"
-          title="Search Global Spotify/Apple Catalog"
-        >
-          <Music className="w-3.5 h-3.5 text-rose-600" />
-          <span>Music Catalog</span>
-        </button>
-
-        <button
-          onClick={onOpenIgImport}
-          className="retro-btn bg-[#f3edf8]"
-          title="Import Instagram Stories Archive (ZIP)"
-        >
-          <span className="text-rose-600 font-bold">IG</span>
-          <span>Import Archive</span>
-        </button>
 
         {filteredItems.length > 0 && (
           <button
             onClick={() => onOpenStory(0)}
-            className="retro-btn bg-[#c5bee6] font-bold"
+            className="retro-btn bg-[#c5bee6] font-bold flex items-center gap-1 flex-shrink-0 text-[10px]"
             title="Play All Stories with Soundtrack"
           >
-            <Play className="w-3.5 h-3.5 fill-black" />
-            <span>Play Stories ({filteredItems.length})</span>
+            <Play className="w-3 h-3 fill-black" />
+            <span>Play All</span>
           </button>
         )}
 
         <button
           onClick={onExportVault}
-          className="retro-btn"
+          className="retro-btn flex items-center gap-1 flex-shrink-0 text-[10px]"
           title="Backup Vault"
         >
-          <Download className="w-3.5 h-3.5 text-blue-700" />
+          <Download className="w-3 h-3 text-blue-700" />
           <span>Backup</span>
         </button>
       </div>
 
-      {/* Success Notification Banner (Does not leave the album!) */}
+      {/* Success Notification Banner */}
       {successToast && (
-        <div className="px-4 py-2 bg-emerald-600 text-white font-bold text-xs flex items-center justify-between border-b border-emerald-800 animate-fadeIn select-none flex-shrink-0">
-          <span className="flex items-center gap-2">
-            <Check className="w-4 h-4 text-emerald-200" />
-            {successToast}
+        <div className="px-3 py-1.5 bg-emerald-600 text-white font-bold text-xs flex items-center justify-between border-b border-emerald-800 animate-fadeIn select-none flex-shrink-0">
+          <span className="flex items-center gap-1.5 truncate">
+            <Check className="w-3.5 h-3.5 text-emerald-200 flex-shrink-0" />
+            <span className="truncate">{successToast}</span>
           </span>
           <button
             onClick={() => setSuccessToast('')}
-            className="text-white hover:text-emerald-200 text-xs font-bold px-1.5 py-0.5 retro-box-outset bg-emerald-700"
+            className="text-white hover:text-emerald-200 text-[10px] font-bold px-1 py-0.5 retro-box-outset bg-emerald-700 flex-shrink-0 ml-2"
           >
             ✕ Dismiss
           </button>
         </div>
       )}
 
-      {/* Multi-Select Floating Action Bar (Appears whenever items are checked) */}
+      {/* Multi-Select Floating Action Bar */}
       {selectedIds.length > 0 && (
-        <div className="px-3 py-2 bg-[#483a78] text-white border-b border-[#302554] flex flex-wrap items-center justify-between gap-2 select-none shadow-md flex-shrink-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-bold text-xs text-amber-300 flex items-center gap-1.5">
-              <CheckSquare className="w-4 h-4" />
-              {selectedIds.length} of {filteredItems.length} Stories Selected
-            </span>
+        <div className="px-3 py-1.5 bg-[#483a78] text-white border-b border-[#302554] flex flex-wrap items-center justify-between gap-2 select-none shadow-md flex-shrink-0">
+          <span className="font-bold text-xs text-amber-300 flex items-center gap-1.5">
+            <CheckSquare className="w-3.5 h-3.5" />
+            {selectedIds.length} Stories Selected
+          </span>
 
-            <button
-              onClick={() => setSelectedIds(filteredItems.map((i) => i.id))}
-              className="px-2 py-0.5 retro-btn text-[10px] text-black font-bold"
-            >
-              Select All ({filteredItems.length})
-            </button>
-
-            {videoItems.length > 0 && (
-              <button
-                onClick={() => setSelectedIds(videoItems.map((i) => i.id))}
-                className="px-2 py-0.5 retro-btn text-[10px] text-black"
-              >
-                Videos Only ({videoItems.length})
-              </button>
-            )}
-
-            {photoItems.length > 0 && (
-              <button
-                onClick={() => setSelectedIds(photoItems.map((i) => i.id))}
-                className="px-2 py-0.5 retro-btn text-[10px] text-black"
-              >
-                Photos Only ({photoItems.length})
-              </button>
-            )}
-
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => setSelectedIds([])}
               className="px-2 py-0.5 retro-btn text-[10px] text-black"
             >
               Clear
             </button>
-          </div>
 
-          <button
-            onClick={() => handleOpenMoveModal(selectedIds)}
-            className="px-3 py-1 bg-amber-400 hover:bg-amber-300 text-black font-bold text-xs retro-box-outset flex items-center gap-1.5 shadow"
-          >
-            <Copy className="w-3.5 h-3.5 text-black" />
-            <span>Copy {selectedIds.length} Stories to Album...</span>
-          </button>
+            <button
+              onClick={() => handleOpenMoveModal(selectedIds)}
+              className="px-2.5 py-0.5 bg-amber-400 hover:bg-amber-300 text-black font-bold text-xs retro-box-outset flex items-center gap-1 shadow"
+            >
+              <Copy className="w-3 h-3 text-black" />
+              <span>Copy to Album...</span>
+            </button>
+          </div>
         </div>
       )}
 
       {/* 4. Address Bar */}
       <div className="px-2 py-1 bg-[#dfdbed] border-b border-[#a09bb8] flex items-center gap-2 text-[11px] select-none flex-shrink-0">
-        <span className="text-neutral-600 font-bold">Address:</span>
-        <div className="flex-1 retro-box-inset px-2 py-0.5 bg-white text-black font-mono text-[11px] truncate flex items-center justify-between">
-          <span>C:\MemoryVault\Albums\{activeAlbumObj?.name || 'All_Memories'}</span>
-          <span className="text-neutral-400 text-[10px]">▼</span>
+        <span className="text-neutral-600 font-bold hidden sm:inline">Address:</span>
+        <div className="flex-1 retro-box-inset px-2 py-0.5 bg-white text-black font-mono text-[10px] sm:text-[11px] truncate flex items-center justify-between">
+          <span className="truncate">C:\MemoryVault\Albums\{activeAlbumObj?.name || 'All_Memories'}</span>
+          <span className="text-neutral-400 text-[9px] ml-1">▼</span>
         </div>
       </div>
 
       {/* 5. Highlight Folders (Story Circles — 1999 Edition with Delete Option) */}
-      <div className="p-3 bg-[#e8e5f2] border-b border-[#a09bb8] flex items-center gap-3 overflow-x-auto select-none flex-shrink-0">
+      <div className="p-2 sm:p-3 bg-[#e8e5f2] border-b border-[#a09bb8] flex items-center gap-2 sm:gap-3 overflow-x-auto select-none flex-shrink-0">
         {albums.map((album) => {
           const isSelected = selectedAlbum === album.id;
           return (
@@ -478,13 +413,13 @@ export default function AlbumGrid({
                 onSelectAlbum(album.id);
                 setSelectedIds([]);
               }}
-              className={`flex items-center gap-2 px-3 py-1.5 retro-box-outset cursor-pointer transition flex-shrink-0 ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 py-1 retro-box-outset cursor-pointer transition flex-shrink-0 ${
                 isSelected
                   ? 'border-t-[#332d47] border-l-[#332d47] border-b-white border-r-white bg-[#cec8e3]'
                   : 'hover:bg-[#f1effa]'
               }`}
             >
-              <div className="w-6 h-6 rounded-md overflow-hidden border border-[#332d47] flex-shrink-0 bg-black">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md overflow-hidden border border-[#332d47] flex-shrink-0 bg-black">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={album.coverUrl}
@@ -492,16 +427,15 @@ export default function AlbumGrid({
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="truncate text-[11px]">
+              <div className="truncate text-[10px] sm:text-[11px] max-w-[90px] sm:max-w-none">
                 <span className={`block truncate ${isSelected ? 'font-bold text-[#1a162b]' : 'text-neutral-700'}`}>
                   {album.name}
                 </span>
-                <span className="text-[9px] text-neutral-500">
+                <span className="text-[8px] sm:text-[9px] text-neutral-500">
                   {album.itemCount} items
                 </span>
               </div>
 
-              {/* Delete Icon on Album Pill for Custom Albums */}
               {album.id !== 'all' && (
                 <button
                   type="button"
@@ -509,7 +443,7 @@ export default function AlbumGrid({
                     e.stopPropagation();
                     onDeleteAlbum(album.id);
                   }}
-                  className="p-1 hover:bg-rose-200 rounded text-neutral-400 hover:text-rose-700 ml-1 transition"
+                  className="p-0.5 hover:bg-rose-200 rounded text-neutral-400 hover:text-rose-700 ml-0.5 transition"
                   title={`Delete album "${album.name}"`}
                 >
                   <Trash2 className="w-3 h-3 text-rose-600" />
@@ -521,29 +455,24 @@ export default function AlbumGrid({
       </div>
 
       {/* 6. Media Display Viewport (Inside Retro Inset Viewport) */}
-      <div className={`p-4 bg-[#f4f2fa] retro-box-inset m-1 ${
+      <div className={`p-2 sm:p-4 bg-[#f4f2fa] retro-box-inset m-1 max-w-full overflow-x-hidden ${
         isMaximized ? 'flex-1 overflow-y-auto min-h-0' : 'min-h-[480px]'
       }`}>
         
         {/* Retro Sound Deck Header Gadget (Image 1 Silk Sonic / Winamp Player) */}
         {showSoundDeck && (
-          <div className="mb-6 p-3 bg-[#e8e4f5] retro-box-outset flex flex-wrap items-center justify-between gap-4 border border-[#bbb4d4]">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-xs text-[#281c44] flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-amber-600" />
-                  Tactile Retro Sound Gadget
-                </span>
-                <span className="px-1.5 py-0.2 bg-[#5a4897] text-white text-[9px] rounded-xs font-mono">
-                  1999 Silk Sonic Edition
-                </span>
-              </div>
-              <p className="text-[10px] text-neutral-600 max-w-md">
-                Tactile stereo player with spinning mini-disc, tape mechanism, vertical volume fader, and pixel track display.
-              </p>
+          <div className="mb-4 p-2 sm:p-3 bg-[#e8e4f5] retro-box-outset flex flex-col items-center justify-center gap-2 border border-[#bbb4d4] max-w-full overflow-hidden">
+            <div className="w-full flex items-center justify-between px-1">
+              <span className="font-bold text-xs text-[#281c44] flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                Retro Sound Gadget
+              </span>
+              <span className="px-1.5 py-0.2 bg-[#5a4897] text-white text-[9px] rounded-xs font-mono">
+                Silk Sonic Stereo
+              </span>
             </div>
 
-            <div className="flex-shrink-0">
+            <div className="w-full flex justify-center max-w-full overflow-hidden">
               <RetroSoundDeck
                 trackTitle={deckTrackTitle}
                 artistName={deckArtistName}
@@ -564,40 +493,85 @@ export default function AlbumGrid({
             <Sparkles className="w-8 h-8 text-neutral-400 mb-2" />
             <p className="font-bold text-xs text-neutral-700">This album is empty</p>
             <p className="text-[11px] text-neutral-500 mt-1">
-              Click &quot;⚡ iOS Share to Vault&quot; or &quot;Add Memory&quot; on the toolbar to add memories.
+              Click &quot;⚡ Share Ingest&quot; or &quot;Add&quot; on the toolbar to add memories.
             </p>
           </div>
         ) : viewMode === 'deck' ? (
-          /* Collectible Vault Card Deck View (Inspired by Image 2 - 100% Original Copyright-Safe) */
-          <div>
-            <div className="flex items-center justify-between mb-4 px-1">
-              <span className="font-bold text-xs text-neutral-700">
-                Collectible Trading Cards ({filteredItems.length} cards)
-              </span>
-              <span className="text-[10px] text-neutral-500 font-mono">
-                Hover to tilt 3D card & reveal holographic sheen
-              </span>
+          /* Collectible Vault Card Deck View with Slider & Grid Sub-modes */
+          <div className="max-w-full overflow-hidden">
+            
+            {/* View Sub-mode Switcher */}
+            <div className="flex items-center justify-between mb-3 px-1 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-xs text-neutral-800">
+                  Collectible Cards ({filteredItems.length})
+                </span>
+                <span className="text-[10px] text-emerald-800 font-bold bg-emerald-100 px-1.5 py-0.2 rounded-xs border border-emerald-300">
+                  Tap card to open
+                </span>
+              </div>
+
+              <div className="flex items-center retro-box-inset p-0.5 bg-[#dfdbed]">
+                <button
+                  onClick={() => setDeckSubMode('slider')}
+                  className={`px-2 py-0.5 text-[10px] font-bold rounded-xs flex items-center gap-1 transition ${
+                    deckSubMode === 'slider'
+                      ? 'bg-[#5a4897] text-white shadow-xs'
+                      : 'text-neutral-700 hover:text-black'
+                  }`}
+                  title="Swipeable 1-Card Slider Mode"
+                >
+                  <Layers className="w-3 h-3" />
+                  <span>🎴 Swipe Deck</span>
+                </button>
+                <button
+                  onClick={() => setDeckSubMode('grid')}
+                  className={`px-2 py-0.5 text-[10px] font-bold rounded-xs flex items-center gap-1 transition ${
+                    deckSubMode === 'grid'
+                      ? 'bg-[#5a4897] text-white shadow-xs'
+                      : 'text-neutral-700 hover:text-black'
+                  }`}
+                  title="Card Grid Mode (All Cards)"
+                >
+                  <Grid className="w-3 h-3" />
+                  <span>📑 Grid</span>
+                </button>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center py-2">
-              {filteredItems.map((item, index) => (
-                <VaultCard
-                  key={item.id}
-                  item={item}
-                  isSelected={selectedIds.includes(item.id)}
-                  onToggleSelect={handleToggleSelectCard}
-                  onOpenStory={() => onOpenStory(index)}
-                  onToggleFavorite={onToggleFavorite}
-                  onCopyItem={(id) => handleOpenMoveModal([id])}
-                  onDeleteItem={onDeleteItem}
-                  rarity={item.cardStyle?.rarity || 'trap-magenta'}
-                />
-              ))}
-            </div>
+            {/* Sub-mode 1: Interactive Swipe Deck Slider */}
+            {deckSubMode === 'slider' ? (
+              <VaultCardDeckSlider
+                items={filteredItems}
+                selectedIds={selectedIds}
+                onToggleSelect={handleToggleSelectCard}
+                onOpenStory={(idx) => onOpenStory(idx)}
+                onToggleFavorite={onToggleFavorite}
+                onCopyItem={(id) => handleOpenMoveModal([id])}
+                onDeleteItem={onDeleteItem}
+              />
+            ) : (
+              /* Sub-mode 2: Grid of all cards */
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center py-2 max-w-full">
+                {filteredItems.map((item, index) => (
+                  <VaultCard
+                    key={item.id}
+                    item={item}
+                    isSelected={selectedIds.includes(item.id)}
+                    onToggleSelect={handleToggleSelectCard}
+                    onOpenStory={() => onOpenStory(index)}
+                    onToggleFavorite={onToggleFavorite}
+                    onCopyItem={(id) => handleOpenMoveModal([id])}
+                    onDeleteItem={onDeleteItem}
+                    rarity={item.cardStyle?.rarity || 'trap-magenta'}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           /* Classic Windows 95 Explorer Grid View */
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3">
             {filteredItems.map((item, index) => {
               const isSelected = selectedIds.includes(item.id);
               const itemAlbumObj = albums.find((a) => a.id === item.album);
@@ -741,12 +715,12 @@ export default function AlbumGrid({
       </div>
 
       {/* 7. Bottom Status Bar */}
-      <div className="px-3 py-1 bg-[#dfdbed] text-[11px] text-neutral-700 flex justify-between select-none border-t border-[#ffffff] flex-shrink-0">
-        <span>{filteredItems.length} object(s) in album • {selectedIds.length} selected</span>
-        <span className="flex items-center gap-2">
-          <span>Mode: {viewMode === 'deck' ? 'TCG Cards' : 'Explorer'}</span>
+      <div className="px-3 py-1 bg-[#dfdbed] text-[10px] sm:text-[11px] text-neutral-700 flex justify-between select-none border-t border-[#ffffff] flex-shrink-0">
+        <span>{filteredItems.length} items • {selectedIds.length} selected</span>
+        <span className="flex items-center gap-1.5">
+          <span>{viewMode === 'deck' ? (deckSubMode === 'slider' ? 'Swipe Deck' : 'Cards Grid') : 'Explorer'}</span>
           <span>•</span>
-          <span>Disk: 100% Private Encrypted Vault</span>
+          <span>100% Encrypted</span>
         </span>
       </div>
 

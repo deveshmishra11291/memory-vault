@@ -5,7 +5,7 @@ import { MediaItem } from '@/lib/types';
 import { 
   Play, Pause, Sparkles, Music, MapPin, Calendar, Heart, 
   Maximize2, Volume2, VolumeX, Shield, Award, Disc3,
-  Copy, Trash2, CheckSquare
+  Copy, Trash2, CheckSquare, Eye
 } from 'lucide-react';
 
 interface VaultCardProps {
@@ -77,14 +77,14 @@ export default function VaultCard({
 
   return (
     <div 
-      className={`card-perspective inline-block select-none ${className}`}
+      className={`card-perspective inline-block select-none max-w-full ${className}`}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={handleMouseLeave}
     >
       {/* Main Collectible Card Frame (Inspired by Image 2 - 100% Original Copyright-Safe) */}
       <div 
-        className={`${frameClass} relative w-80 sm:w-84 rounded-xl p-3 text-neutral-900 transition-transform duration-150 ease-out shadow-2xl ${
+        className={`${frameClass} relative w-full max-w-[320px] sm:max-w-[340px] mx-auto rounded-xl p-3 text-neutral-900 transition-transform duration-150 ease-out shadow-2xl ${
           isSelected ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-purple-900 scale-[1.02]' : ''
         }`}
         style={{
@@ -120,7 +120,11 @@ export default function VaultCard({
         )}
 
         {/* 1. Top Card Title Banner */}
-        <div className="card-banner-inset px-2.5 py-1 rounded-sm flex items-center justify-between mb-2">
+        <div 
+          onClick={() => onOpenStory && onOpenStory()}
+          className="card-banner-inset px-2.5 py-1 rounded-sm flex items-center justify-between mb-2 cursor-pointer hover:opacity-90 transition"
+          title="Click to Open Memory"
+        >
           <span className="font-serif font-black text-xs text-[#2b101f] tracking-wide truncate max-w-[190px]">
             {item.title}
           </span>
@@ -144,8 +148,12 @@ export default function VaultCard({
           </span>
         </div>
 
-        {/* 3. Center Media Frame ("Artwork" frame of the card) */}
-        <div className="relative aspect-[4/5] rounded-xs border-3 border-[#2b0e1e] bg-black overflow-hidden shadow-2xl mb-2 group">
+        {/* 3. Center Media Frame ("Artwork" frame of the card - TAP TO OPEN) */}
+        <div 
+          onClick={() => onOpenStory && onOpenStory()}
+          className="relative aspect-[4/5] rounded-xs border-3 border-[#2b0e1e] bg-black overflow-hidden shadow-2xl mb-2 group cursor-pointer"
+          title="Click to Open Memory"
+        >
           {item.type === 'video' ? (
             <video
               ref={videoRef}
@@ -160,28 +168,22 @@ export default function VaultCard({
             <img
               src={item.thumbnailUrl || item.url}
               alt={item.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
           )}
 
-          {/* Video Play/Pause Overlay Button */}
-          {item.type === 'video' && (
-            <button
-              onClick={toggleVideoPlayback}
-              className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/35 transition"
-            >
-              <div className="w-11 h-11 rounded-full bg-white/90 border border-black/40 flex items-center justify-center shadow-lg transition transform group-hover:scale-110">
-                {isPlaying ? (
-                  <Pause className="w-5 h-5 fill-black text-black" />
-                ) : (
-                  <Play className="w-5 h-5 fill-black text-black translate-x-0.5" />
-                )}
-              </div>
-            </button>
-          )}
+          {/* In-Frame Play/Open Overlay Button */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 group-hover:bg-black/45 transition">
+            <div className="w-12 h-12 rounded-full bg-white/90 border-2 border-black/50 flex items-center justify-center shadow-2xl transition transform group-hover:scale-110 mb-1">
+              <Play className="w-5 h-5 fill-black text-black translate-x-0.5" />
+            </div>
+            <span className="px-2 py-0.5 bg-black/80 text-white font-mono text-[9px] rounded-xs border border-white/20 opacity-0 group-hover:opacity-100 transition shadow">
+              Tap to Open Story
+            </span>
+          </div>
 
           {/* Top In-Frame Media Pill */}
-          <div className="absolute top-2 left-2 z-10 flex items-center gap-1.5">
+          <div className="absolute top-2 left-2 z-10 flex items-center gap-1.5 pointer-events-none">
             <span className="px-1.5 py-0.5 rounded-xs bg-black/80 text-white font-mono text-[9px] border border-white/20">
               {item.type === 'video' ? '🎬 9:16 VIDEO' : '📸 SNAPSHOT'}
             </span>
@@ -209,14 +211,14 @@ export default function VaultCard({
             </div>
           )}
 
-          {/* Expand to CRT Story Viewer */}
+          {/* Expand to CRT Story Viewer Icon */}
           {onOpenStory && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onOpenStory();
               }}
-              className="absolute top-2 right-2 p-1 rounded-sm bg-black/75 text-white hover:bg-black border border-white/20"
+              className="absolute top-2 right-2 p-1.5 rounded-sm bg-black/75 text-white hover:bg-black border border-white/20 shadow"
               title="Open Full CRT Story Viewer"
             >
               <Maximize2 className="w-3.5 h-3.5" />
@@ -242,13 +244,13 @@ export default function VaultCard({
           </div>
 
           {/* Lore / Story Text */}
-          <p className="text-[11px] leading-relaxed italic text-[#260e1d] mb-2 font-serif line-clamp-3">
+          <p className="text-[11px] leading-relaxed italic text-[#260e1d] mb-2 font-serif line-clamp-2">
             &quot;{item.caption || item.title || 'A timeless memory captured and preserved forever in the private vault.'}&quot;
           </p>
 
           {/* Attached Soundtrack Badge */}
           {item.audioTrack && (
-            <div className="flex items-center justify-between bg-white/70 px-2 py-1 rounded-xs border border-[#a87498] text-[10px] font-mono mb-1">
+            <div className="flex items-center justify-between bg-white/70 px-2 py-1 rounded-xs border border-[#a87498] text-[10px] font-mono mb-2">
               <span className="text-[#3b1229] font-bold truncate">
                 ♫ {item.audioTrack.title}
               </span>
@@ -258,56 +260,76 @@ export default function VaultCard({
             </div>
           )}
 
+          {/* Big, Clear "Open Memory" Primary Action Button */}
+          {onOpenStory && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenStory();
+              }}
+              className="w-full py-1.5 px-3 bg-[#5a4897] hover:bg-[#453675] text-white font-bold text-xs rounded-xs shadow flex items-center justify-center gap-1.5 mb-2 transition transform active:scale-95"
+            >
+              <Play className="w-3.5 h-3.5 fill-white" />
+              <span>Tap to Open Story & Sound</span>
+            </button>
+          )}
+
           {/* Action Row inside lore box */}
-          <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-[#cca7c2]/60">
-            {onCopyItem && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onCopyItem(item.id);
-                }}
-                className="p-1 hover:bg-[#cca7c2]/50 rounded text-[#451730]"
-                title="Copy card to album..."
-              >
-                <Copy className="w-3.5 h-3.5" />
-              </button>
-            )}
+          <div className="flex items-center justify-between pt-1 border-t border-[#cca7c2]/60 text-[10px] font-mono">
+            <span className="text-[#6e224c] font-bold">
+              #{item.id.slice(-4).toUpperCase()}
+            </span>
 
-            {onToggleFavorite && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleFavorite(item.id);
-                }}
-                className="p-1 text-[#6e224c] hover:scale-110 transition"
-                title="Favorite Card"
-              >
-                <Heart className={`w-3.5 h-3.5 ${item.isFavorite ? 'fill-rose-600 text-rose-600' : ''}`} />
-              </button>
-            )}
+            <div className="flex items-center gap-1">
+              {onCopyItem && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCopyItem(item.id);
+                  }}
+                  className="p-1 hover:bg-[#cca7c2]/50 rounded text-[#451730]"
+                  title="Copy card to album..."
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
+              )}
 
-            {onDeleteItem && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteItem(item.id);
-                }}
-                className="p-1 text-neutral-500 hover:text-rose-700 hover:bg-rose-100 rounded"
-                title="Delete Card"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            )}
+              {onToggleFavorite && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleFavorite(item.id);
+                  }}
+                  className="p-1 text-[#6e224c] hover:scale-110 transition"
+                  title="Favorite Card"
+                >
+                  <Heart className={`w-3.5 h-3.5 ${item.isFavorite ? 'fill-rose-600 text-rose-600' : ''}`} />
+                </button>
+              )}
+
+              {onDeleteItem && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteItem(item.id);
+                  }}
+                  className="p-1 text-neutral-500 hover:text-rose-700 hover:bg-rose-100 rounded"
+                  title="Delete Card"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
         {/* 5. Card Footer: Serial Code & Hologram Foil Stamp */}
         <div className="flex items-center justify-between px-1 pt-1.5 text-[9px] font-mono text-[#fcd8ef]">
           <span className="tracking-wider">
-            #VLT-{item.id.slice(-4).toUpperCase()} • PRIVATE VAULT
+            VAULT CARD • 100% PRIVATE
           </span>
 
-          {/* Hologram Square Foil Stamp (Inspired by TCG authentication foil in Image 2) */}
+          {/* Hologram Square Foil Stamp */}
           <div 
             className="w-3.5 h-3.5 rounded-2xs bg-gradient-to-tr from-amber-300 via-yellow-100 to-amber-500 border border-amber-600 shadow-sm flex items-center justify-center text-[7px] font-bold text-black"
             title="Authentic MemoryVault Card"

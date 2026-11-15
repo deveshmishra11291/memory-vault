@@ -417,7 +417,7 @@ export default function Home() {
 
         {/* Center: Main Windows Area (With iPhone Frame wrapper if isMobileSimulator is active) */}
         {isMobileSimulator ? (
-          <div className="relative w-full max-w-[420px] rounded-[52px] p-3.5 bg-neutral-900 border-[6px] border-neutral-700 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] flex flex-col z-20 my-2">
+          <div className="relative w-full max-w-[420px] rounded-[52px] p-3.5 bg-neutral-900 border-[6px] border-neutral-700 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] flex flex-col z-20 my-2 overflow-hidden">
             
             {/* iOS Dynamic Island & Status Bar */}
             <div className="w-full flex items-center justify-between px-6 pt-2 pb-1 text-white select-none z-30">
@@ -435,7 +435,7 @@ export default function Home() {
             </div>
 
             {/* iPhone Inner Screen Viewport */}
-            <div className="w-full rounded-[40px] overflow-hidden bg-[#dfdbed] min-h-[750px] max-h-[82vh] overflow-y-auto flex flex-col relative">
+            <div className="w-full rounded-[40px] overflow-hidden bg-[#dfdbed] min-h-[750px] max-h-[82vh] overflow-y-auto overflow-x-hidden flex flex-col relative">
               {openWindows.gallery && (
                 <AlbumGrid
                   items={memories}
